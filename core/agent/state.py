@@ -1,6 +1,5 @@
 from langgraph.graph import StateGraph, START, END
-from langgraph.graph.state import TypedDict
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any,TypedDict
 from core.common.config import ROBOT_TEMPLATES
 
 # 元智能体核心状态

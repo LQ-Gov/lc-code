@@ -1,0 +1,31 @@
+# Core dependencies
+langgraph
+langchain-core
+langchain-openai
+python-dotenv
+
+# Web crawling dependencies (for real implementation)
+requests
+beautifulsoup4
+lxml
+
+# Database
+sqlite3
+
+# Other utilities
+urllib3
+
+# Document processing
+PyPDF2
+python-docx
+
+# Web framework
+fastapi
+uvicorn
+
+# CORS support
+fastapi-cors
+
+# UUID and datetime handling
+uuid
+datetime

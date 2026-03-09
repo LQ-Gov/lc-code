@@ -23,6 +23,18 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS manager_oper_logs
                  (log_id TEXT PRIMARY KEY, manager_id TEXT, role TEXT, 
                   oper_time TEXT, oper_content TEXT)''')
+    # 5. 特定问题执行流程表
+    c.execute('''CREATE TABLE IF NOT EXISTS specific_question_flows
+                 (key TEXT PRIMARY KEY, desc TEXT, flow TEXT, status TEXT, prompt TEXT)''')
+    # 6. 爬虫结果表 - NEW
+    c.execute('''CREATE TABLE IF NOT EXISTS crawler_results
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  seed_url TEXT NOT NULL,
+                  current_url TEXT NOT NULL,
+                  raw_content TEXT,
+                  questions TEXT,
+                  answers TEXT,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
     conn.close()
 

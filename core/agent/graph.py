@@ -41,7 +41,7 @@ def build_meta_agent_graph():
 meta_agent_graph = build_meta_agent_graph()
 
 # 元智能体调用入口
-def meta_agent_invoke(manager_id: str, user_query: str, uploaded_docs: List[str] = None):
+def meta_agent_invoke(manager_id: str, user_query: str, uploaded_docs: list[str] = None):
     # 初始化生成ID
     gen_id = generate_id("gen")
     # 初始化状态

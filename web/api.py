@@ -1,10 +1,37 @@
 from fastapi import FastAPI, Query, Body
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
+import os
 from pydantic import BaseModel
 from core.robot.graph import robot_invoke
 from core.agent.graph import meta_agent_invoke
 from core.common.utils import generate_id
+from core.crawl.graph import crawler_graph
+from core.crawl.state import CrawlState
+from core.common.db import db_query, db_execute, init_db
+from datetime import datetime
+
+# 导入独立的API模块
+from web.knowledge_base_api import kb_router
+from web.special_flow_api import sf_router
+from web.error_feedback_api import ef_router
 
 app = FastAPI(title="客服AI机器人+元智能体API", version="1.0")
+
+# Add CORS middleware to allow requests from UI
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 注册独立的API路由
+app.include_router(kb_router)
+app.include_router(sf_router)
+app.include_router(ef_router)
 
 # 模型定义
 class RobotConsultRequest(BaseModel):
@@ -18,6 +45,10 @@ class MetaAgentGenerateRequest(BaseModel):
     manager_id: str
     user_query: str
     uploaded_docs: list = None
+
+# 爬虫接口模型
+class CrawlRequest(BaseModel):
+    seed_url: str
 
 # 客服机器人咨询接口
 @app.post("/api/robot/consult", summary="客户咨询客服机器人")
@@ -40,6 +71,7 @@ def robot_consult(req: RobotConsultRequest):
         }
     }
 
+
 # 元智能体生成机器人接口
 @app.post("/api/meta-agent/generate", summary="管理者通过元智能体生成客服机器人")
 def meta_agent_generate(req: MetaAgentGenerateRequest):
@@ -60,7 +92,44 @@ def meta_agent_generate(req: MetaAgentGenerateRequest):
         }
     }
 
+# 爬虫接口
+@app.post("/api/crawler/crawl", summary="启动爬虫")
+def crawl_endpoint(req: CrawlRequest):
+    try:
+        crawl_state = CrawlState(seed_url=req.seed_url)
+        result = crawler_graph.invoke(crawl_state)
+        return {"code": 200, "msg": "爬取完成", "data": result}
+    except Exception as e:
+        return {"code": 500, "msg": str(e), "data": {}}
+
+
 # 健康检查接口
 @app.get("/api/health", summary="服务健康检查")
 def health_check():
     return {"code": 200, "msg": "service is running"}
+
+# Root route to serve the main frontend page
+@app.get("/", response_class=HTMLResponse, summary="访问前端页面")
+async def serve_frontend():
+    # Read and return the main HTML file
+    ui_index_path = os.path.join(os.path.dirname(__file__), "..", "ui", "index.html")
+    if os.path.exists(ui_index_path):
+        with open(ui_index_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    else:
+        return HTMLResponse(content="<h1>Frontend not found</h1><p>Please ensure the UI files are in the ui directory.</p>", status_code=404)
+
+# Admin page route
+@app.get("/admin", response_class=HTMLResponse, summary="访问管理页面")
+async def serve_admin_page():
+    admin_path = os.path.join(os.path.dirname(__file__), "..", "ui", "admin.html")
+    if os.path.exists(admin_path):
+        with open(admin_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    else:
+        return HTMLResponse(content="<h1>Admin page not found</h1>", status_code=404)
+
+# Serve static files (CSS, JS, images, etc.)
+app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "ui")), name="static")

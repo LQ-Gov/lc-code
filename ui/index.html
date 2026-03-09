@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客服AI机器人</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>客服AI机器人</h2>
+            <div class="status-indicator">
+                <span class="online-dot"></span>
+                <span>在线</span>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will be dynamically added here -->
+            <!-- 错误反馈按钮和转人工按钮 - 固定在聊天内容区域左下方 -->
+            <div class="action-buttons-container">
+                <button id="errorFeedbackBtn" class="error-feedback-btn">反馈错误</button>
+                <button id="transferToHumanBtn" class="transfer-to-human-btn">转人工</button>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <div class="input-wrapper">
+                <textarea 
+                    id="userInput" 
+                    placeholder="请输入您的问题..." 
+                    rows="1"
+                    maxlength="500"
+                ></textarea>
+                <button id="sendButton" class="send-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="suggestions">
+                <span class="suggestion-item">常见问题：</span>
+                <button class="suggestion-btn" data-text="如何重置密码？">如何重置密码？</button>
+                <button class="suggestion-btn" data-text="订单状态查询">订单状态查询</button>
+                <button class="suggestion-btn" data-text="退款政策">退款政策</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 错误反馈弹窗 -->
+    <div id="errorFeedbackModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>提交错误反馈</h3>
+            <div class="form-group">
+                <label for="errorType">错误类型:</label>
+                <select id="errorType">
+                    <option value="知识库未匹配到正确答案">知识库未匹配到正确答案</option>
+                    <option value="特定问题操作步骤错误">特定问题操作步骤错误</option>
+                    <option value="回复内容不准确">回复内容不准确</option>
+                    <option value="工具调用失败">工具调用失败</option>
+                    <option value="系统故障">系统故障</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="errorDescription">详细错误描述:</label>
+                <textarea id="errorDescription" rows="4" placeholder="请详细描述机器人回答的错误..."></textarea>
+            </div>
+            <button id="submitFeedbackBtn" class="btn">提交反馈</button>
+        </div>
+    </div>
+
+    <!-- 转人工确认弹窗 -->
+    <div id="transferToHumanModal" class="modal">
+        <div class="modal-content">
+            <span class="close transfer-close">&times;</span>
+            <h3>转接人工客服</h3>
+            <p>您确定要转接人工客服吗？人工客服将在工作时间内为您服务。</p>
+            <div class="modal-actions">
+                <button id="cancelTransferBtn" class="btn-cancel">取消</button>
+                <button id="confirmTransferBtn" class="btn-confirm">确认转接</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

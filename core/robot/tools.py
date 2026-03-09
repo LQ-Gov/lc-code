@@ -1,76 +1,57 @@
+from typing import Dict, Any
+from core.common.qwen_utils import match_knowledge_base_with_qwen, extract_serial_number_with_qwen
 from langchain_core.tools import tool
-from core.common.utils import generate_id
-import random
+@tool(description="Query bank card application progress")
+def query_bank_card_apply_progress(user_id: str) -> Dict[str, Any]:
+    """Simulate querying bank card application progress"""
+    # In a real system, this would call an external API or database
+    # For simulation purposes, return mock data based on user_id
+    import random
+    
+    progress_options = [
+        {"progress": "审核中", "tips": "请耐心等待，通常需要1-3个工作日"},
+        {"progress": "已通过", "tips": "恭喜！您的银行卡已通过审核，正在制作中"},
+        {"progress": "已邮寄", "tips": "您的银行卡已邮寄，请注意查收快递"},
+        {"progress": "需要补充材料", "tips": "请登录APP上传身份证正反面照片"}
+    ]
+    
+    return random.choice(progress_options)
 
-# 模拟：银行卡申请进度查询工具
-@tool
-def query_bank_card_apply_progress(user_id: str) -> dict:
-    """
-    用于查询客户的银行卡申请进度，入参为客户ID
-    :param user_id: 客户唯一ID
-    :return: 包含进度和关键节点的字典
-    """
-    # 模拟进度：审核中、已通过、已邮寄、已签收、审核驳回
-    progress_list = ["审核中", "已通过", "已邮寄", "已签收", "审核驳回"]
-    progress = random.choice(progress_list)
-    return {
-        "apply_id": generate_id("apply"),
-        "user_id": user_id,
-        "progress": progress,
-        "update_time": "2025-10-20 15:30:00",
-        "tips": "审核驳回可在APP提交重新审核申请" if progress == "审核驳回" else ""
-    }
+@tool(description="Query bank card transaction failure reason")
+def query_bank_card_trans_fail(serial_no: str) -> Dict[str, Any]:
+    """Simulate querying bank card transaction failure reason"""
+    # In a real system, this would call a transaction service API
+    # For simulation purposes, return mock data based on serial_no
+    import random
+    
+    failure_scenarios = [
+        {
+            "fail_reason": "余额不足",
+            "solution": "请充值账户余额后重试交易"
+        },
+        {
+            "fail_reason": "系统故障",
+            "solution": "系统正在维护中，请稍后再试或联系客服"
+        },
+        {
+            "fail_reason": "卡片异常",
+            "solution": "请检查卡片状态或联系银行核对卡片信息"
+        },
+        {
+            "fail_reason": "交易超时",
+            "solution": "网络连接超时，请重新发起交易"
+        }
+    ]
+    
+    return random.choice(failure_scenarios)
 
-# 模拟：银行卡交易失败查询工具
-@tool
-def query_bank_card_trans_fail(serial_no: str) -> dict:
-    """
-    用于根据流水号查询银行卡交易失败原因，入参为交易流水号
-    :param serial_no: 交易流水号（APP订单详情/短信可查）
-    :return: 包含失败原因和解决方案的字典
-    """
-    # 模拟失败原因：余额不足、系统故障、卡片异常、商户端问题
-    fail_reason_list = ["余额不足", "系统故障", "卡片异常", "商户端问题"]
-    fail_reason = random.choice(fail_reason_list)
-    solution_map = {
-        "余额不足": "请先为银行卡充值足够余额后重新发起交易",
-        "系统故障": "当前支付系统临时故障，请稍后再试",
-        "卡片异常": "请联系银行核对卡片状态（是否冻结/挂失）",
-        "商户端问题": "请联系商户确认收款账户是否正常"
-    }
-    return {
-        "serial_no": serial_no,
-        "fail_reason": fail_reason,
-        "solution": solution_map[fail_reason],
-        "contact_way": "客服热线：400-000-0000"
-    }
+def match_knowledge_base(question: str, kb_content: str) -> Dict[str, Any]:
+    """Match question with knowledge base using Qwen3"""
+    return match_knowledge_base_with_qwen(question, kb_content)
 
-# 知识库匹配工具
-@tool
-def match_knowledge_base(question: str, kb_content: str) -> dict:
-    """
-    用于从知识库内容中匹配客户问题的答案，入参为客户问题和知识库内容
-    :param question: 客户问题
-    :param kb_content: 知识库文本内容
-    :return: 包含是否匹配和答案的字典
-    """
-    # 简易匹配：关键词匹配（可替换为向量匹配提升精度）
-    keywords = question.strip().split()
-    match_lines = []
-    for line in kb_content.split("\n"):
-        if any(key in line for key in keywords) and line.strip():
-            match_lines.append(line.strip())
-    if match_lines:
-        return {"is_match": True, "answer": "\n".join(match_lines[:3])} # 取前3条匹配结果
-    else:
-        return {"is_match": False, "answer": ""}
-
-# 工具列表
-ROBOT_TOOLS = [
-    query_bank_card_apply_progress,
-    query_bank_card_trans_fail,
-    match_knowledge_base
-]
-
-# 工具映射
-TOOL_MAP = {tool.name: tool for tool in ROBOT_TOOLS}
+# Tool mapping for easy access
+TOOL_MAP = {
+    "query_bank_card_apply_progress": query_bank_card_apply_progress,
+    "query_bank_card_trans_fail": query_bank_card_trans_fail,
+    "match_knowledge_base": match_knowledge_base
+}
