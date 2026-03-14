@@ -10,11 +10,18 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS customer_sessions
                  (session_id TEXT PRIMARY KEY, user_id TEXT, create_time TEXT, 
                   last_msg_time TEXT, context TEXT, feedback_status TEXT)''')
-    # 2. 错误反馈表
+    # 2. 错误反馈表 - 重新设计
     c.execute('''CREATE TABLE IF NOT EXISTS error_feedback
-                 (feedback_id TEXT PRIMARY KEY, session_id TEXT, question TEXT, 
-                  robot_reply TEXT, error_type TEXT, error_desc TEXT, 
-                  create_time TEXT, fix_status TEXT, fix_time TEXT)''')
+                 (feedback_id TEXT PRIMARY KEY, 
+                  user_id TEXT,
+                  session_id TEXT, 
+                  chat_messages TEXT,
+                  feedback_error_type TEXT, 
+                  feedback_error_detail TEXT,
+                  auto_fix_result TEXT,
+                  status TEXT,
+                  create_time TEXT, 
+                  update_time TEXT)''')
     # 3. 元智能体生成记录表
     c.execute('''CREATE TABLE IF NOT EXISTS agent_generations
                  (gen_id TEXT PRIMARY KEY, manager_id TEXT, create_time TEXT, 

@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
+from langchain_core.callbacks import BaseCallbackHandler
+import json
+from langchain_core.messages import BaseMessage,SystemMessage
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +15,59 @@ load_dotenv()
 QWEN_API_KEY = os.getenv("QWEN_API_KEY")
 QWEN_MODEL_NAME = os.getenv("QWEN_MODEL_NAME", "qwen-max")
 
+
+class LLMRequestLogger(BaseCallbackHandler):
+    """
+    统一监听所有大模型请求/响应，自动打印日志
+    """
+    def on_llm_start(
+        self, serialized: Dict[str, Any], prompts: list[str], **kwargs: Any
+    ) -> None:
+        """LLM 开始请求时触发"""
+        print("\n" + "="*80)
+        print(f"📤 【大模型请求开始】")
+        print(f"模型名称: {serialized.get('name', '未知模型')}")
+        print(f"请求类型: 文本补全")
+        print(f"请求内容:\n{json.dumps(prompts, ensure_ascii=False, indent=2)}")
+        print("-"*80)
+
+    def on_chat_model_start(
+        self, serialized: Dict[str, Any], messages: list[list[BaseMessage]], **kwargs: Any
+    ) -> None:
+        """Chat 模型开始请求时触发（绝大多数场景）"""
+        print("\n" + "="*80)
+        print(f"📤 【大模型请求开始】")
+        print(f"模型名称: {serialized.get('name', '未知模型')}")
+        print(f"请求类型: 对话模型")
+        # 格式化打印消息
+        msg_list = [{"role": m.type, "content": m.content} for m in messages[0]]
+        print(f"请求消息:\n{json.dumps(msg_list, ensure_ascii=False, indent=2)}")
+        print("-"*80)
+
+    def on_llm_end(self, response: Any, **kwargs: Any) -> None:
+        """LLM 响应完成时触发"""
+        print(f"📥 【大模型响应完成】")
+        # 打印响应内容
+        try:
+            content = response.generations[0][0].text.strip()
+            print(f"响应内容:\n{content}")
+            # 打印 token 信息
+            if hasattr(response, "llm_output") and response.llm_output:
+                token_usage = response.llm_output.get("token_usage", {})
+                if token_usage:
+                    print(f"Token 消耗: {token_usage}")
+        except Exception:
+            print(f"响应数据: {response}")
+        print("="*80 + "\n")
+
+    def on_llm_error(self, error: Exception, **kwargs: Any) -> None:
+        """LLM 请求出错时触发"""
+        print(f"❌ 【大模型请求错误】")
+        print(f"错误信息: {str(error)}")
+        print("="*80 + "\n")
+
+
+logger = LLMRequestLogger()
 def get_qwen_model():
     """Get Qwen3 model instance using OpenAI-compatible API"""
     if not QWEN_API_KEY:
@@ -22,7 +78,8 @@ def get_qwen_model():
         api_key=QWEN_API_KEY,
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         temperature=0.3,
-        max_tokens=2000
+        max_tokens=2000,
+        callbacks=[logger]
     )
 
 def match_knowledge_base_with_qwen(question: str, kb_content: str) -> Dict[str, Any]:

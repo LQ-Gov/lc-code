@@ -3,10 +3,9 @@ from core.robot.state import CustomerServiceRobotState
 
 from langgraph.prebuilt import ToolNode
 from core.robot.nodes import (
-    load_knowledge_base, judge_question_type, match_kb_node,
+    judge_question_type, match_kb_node,
     handle_specific_question, handle_invalid_question, handle_system_error,
-    auto_fix_error, is_invalid_question_cond, is_specific_question_cond,
-    has_error_cond,question_dispatch_cond,call_specific_tool_cond, handle_casual_chat,replay
+    auto_fix_error, question_dispatch_cond,call_specific_tool_cond, handle_casual_chat,reply
 )
 
 from core.robot.tools import query_bank_card_apply_progress,query_bank_card_trans_fail
@@ -29,7 +28,7 @@ def build_robot_graph():
     graph.add_node("handle_system_error", handle_system_error)
     graph.add_node("auto_fix_error", auto_fix_error)
     graph.add_node("handle_casual_chat", handle_casual_chat)
-    graph.add_node("replay",replay)
+    graph.add_node("reply",reply)
 
     # 定义节点流转
     graph.add_edge(START, "judge_question_type")
@@ -38,19 +37,21 @@ def build_robot_graph():
         "invalid": "handle_invalid",
         "casual_chat": "handle_casual_chat",
         "general_kb": "handle_general_kb",
-        "specific_question": "handle_specific_question"
+        "specific_question": "handle_specific_question",
+        "error_feedback": "auto_fix_error"
     })
 
     # 特定问题处理(ReAct模式)
     graph.add_conditional_edges("handle_specific_question", call_specific_tool_cond, {
         "call_tool": "call_specific_tool",
-        "end": "replay"
+        "end": "reply"
     })
 
     graph.add_edge("call_specific_tool","handle_specific_question")
-    graph.add_edge("handle_invalid","replay")
-    graph.add_edge("handle_general_kb","replay")
-    graph.add_edge("handle_casual_chat","replay")
+    graph.add_edge("handle_invalid","reply")
+    graph.add_edge("handle_general_kb","reply")
+    graph.add_edge("handle_casual_chat","reply")
+    graph.add_edge("auto_fix_error","reply")
 
     
     # 特定问题工具调用后判断是否有错误

@@ -36,18 +36,22 @@
                 <div class="message-time" x-text="getCurrentTime()"></div>
             </div>
             
-            <!-- 错误反馈按钮和转人工按钮 - 固定在聊天内容区域左下方 -->
-            <div class="action-buttons-container">
-                <button @click="showFeedbackModal = true" class="error-feedback-btn">反馈错误</button>
-                <button @click="showTransferModal = true" class="transfer-to-human-btn">转人工</button>
-            </div>
+            
+        </div>
+            
+            
+        <!-- 错误反馈按钮和转人工按钮 - 固定在聊天内容区域左下方 -->
+        <div class="action-buttons-container">
+            <button @click="showFeedbackModal = true" class="error-feedback-btn">反馈错误</button>
+            <button @click="showTransferModal = true" class="transfer-to-human-btn">转人工</button>
         </div>
         <div class="chat-input-container">
             <div class="input-wrapper">
                 <textarea 
+                    id="userInput"
                     x-model="inputMessage"
                     @input="autoResize($event.target)"
-                    @keypress.enter="!$event.shiftKey && sendMessage($event)"
+                    @keydown.enter="handleEnterKey($event)"
                     placeholder="请输入您的问题..."
                     rows="1"
                     maxlength="500"
@@ -79,8 +83,6 @@
                     <option value="知识库未匹配到正确答案">知识库未匹配到正确答案</option>
                     <option value="特定问题操作步骤错误">特定问题操作步骤错误</option>
                     <option value="回复内容不准确">回复内容不准确</option>
-                    <option value="工具调用失败">工具调用失败</option>
-                    <option value="系统故障">系统故障</option>
                     <option value="其他">其他</option>
                 </select>
             </div>
@@ -158,9 +160,7 @@
                 },
                 
                 // Send message
-                async sendMessage(event) {
-                    if (event) event.preventDefault();
-                    
+                async sendMessage() {
                     const message = this.inputMessage.trim();
                     if (!message) return;
                     
@@ -190,6 +190,17 @@
                 autoResize(textarea) {
                     textarea.style.height = 'auto';
                     textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+                },
+                
+                // Handle Enter key
+                handleEnterKey(event) {
+                    if (event.shiftKey) {
+                        // Shift + Enter: allow default behavior (newline)
+                        return;
+                    }
+                    // Enter only: prevent default and send message
+                    event.preventDefault();
+                    this.sendMessage();
                 },
                 
                 // Scroll to bottom
@@ -257,10 +268,10 @@
                     try {
                         const feedbackData = {
                             session_id: this.sessionId,
-                            question: this.currentQuestion,
-                            robot_reply: this.currentReply,
-                            error_type: this.feedback.errorType,
-                            error_desc: this.feedback.description
+                            user_id: this.userId,
+                            chat_messages: JSON.stringify(this.messages),
+                            feedback_error_type: this.feedback.errorType,
+                            feedback_error_detail: this.feedback.description
                         };
                         
                         const response = await fetch('/api/error-feedback', {

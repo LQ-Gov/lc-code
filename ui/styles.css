@@ -99,12 +99,14 @@ body {
 
 /* 操作按钮容器 - 包含错误反馈和转人工按钮 */
 .action-buttons-container {
-    position: absolute;
-    bottom: 20px;
+    /* position: absolute; */
+    /* bottom: 200px; */
+    padding: 10px;
     left: 20px;
     display: flex;
     gap: 10px;
-    z-index: 20;
+    z-index: 1000;
+    margin-top: auto;
 }
 
 /* 错误反馈按钮样式 */
@@ -187,61 +189,59 @@ body {
 
 .input-wrapper {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 15px;
+    align-items: flex-end;
 }
 
 #userInput {
     flex: 1;
-    padding: 12px 15px;
-    border: 1px solid #d1d5db;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
     border-radius: 24px;
     resize: none;
     font-family: inherit;
     font-size: 1rem;
     outline: none;
-    max-height: 100px;
-    min-height: 44px;
-    width: 0; /* 添加这一行，确保flex正确计算宽度 */
-    overflow-y: hidden; /* 只在需要时显示垂直滚动条 */
+    max-height: 120px;
+    min-height: 48px;
+    width: 0;
+    overflow-y: hidden;
+    transition: all 0.3s ease;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 隐藏滚动条 - WebKit浏览器 */
+#userInput::-webkit-scrollbar {
+    display: none;
+}
+
+/* 隐藏滚动条 - Firefox */
+#userInput {
+    scrollbar-width: none;
+}
+
+/* 隐藏滚动条 - IE/Edge */
+#userInput {
+    -ms-overflow-style: none;
 }
 
 #userInput:focus {
-    border-color: #667eea;
+    border-color: #4a6cf7;
+    box-shadow: 0 2px 8px rgba(74, 108, 247, 0.2);
+    background-color: #ffffff;
 }
 
 #userInput::placeholder {
-    color: #999;
+    color: #9ca3af;
+    font-weight: 400;
 }
 
-/* 优化滚动条显示 - 单行时不显示滚动条 */
-#userInput::-webkit-scrollbar {
-    width: 6px;
-}
-
-#userInput::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 10px;
-}
-
-#userInput::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 10px;
-}
-
-#userInput::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
-
-/* Firefox 滚动条优化 - 使用自动模式 */
-#userInput {
-    scrollbar-width: auto;
-    scrollbar-color: auto;
-}
 
 .send-button {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background-color: #4a6cf7;
     border: none;
@@ -249,11 +249,21 @@ body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(74, 108, 247, 0.3);
 }
 
 .send-button:hover {
+    background-color: #3a5af5;
     transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(74, 108, 247, 0.4);
+}
+
+.send-button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .suggestions {
@@ -327,7 +337,7 @@ body {
     }
     
     .action-buttons-container {
-        bottom: 5px;
+        bottom: 70px;
         left: 15px;
         gap: 8px;
     }
@@ -342,7 +352,6 @@ body {
 
 /* 模态框样式 */
 .modal {
-    display: none;
     position: fixed;
     z-index: 1000;
     left: 0;

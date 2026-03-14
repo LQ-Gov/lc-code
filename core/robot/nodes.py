@@ -1,4 +1,4 @@
-from langchain_core.messages import AIMessage,SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage
 
 from core.robot.state import CustomerServiceRobotState
 from core.common.utils import crawl_knowledge_base, format_reply, generate_id, format_time
@@ -7,10 +7,11 @@ from core.common.db import db_execute, db_query
 from core.common.qwen_utils import generate_response_with_qwen, extract_serial_number_with_qwen, get_qwen_model
 from core.common.vector_store import KnowledgeBaseVectorStore
 from core.common.specific_question_service import SpecificQuestionService
+from core.common.error_feedback_service import ErrorFeedbackService
 from core.robot.tools import query_bank_card_apply_progress, query_bank_card_trans_fail
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-import re
+import re,json
 
 # 节点1：加载知识库内容
 def load_knowledge_base(state: CustomerServiceRobotState) -> CustomerServiceRobotState:
@@ -22,11 +23,13 @@ def load_knowledge_base(state: CustomerServiceRobotState) -> CustomerServiceRobo
 def judge_question_type(state: CustomerServiceRobotState) -> CustomerServiceRobotState:
     question = state["question"].strip()
     messages = state["messages"]
-    history = "\n".join([f"{m.type}: {m.content}" for m in messages])
     
     # 无效问题判断（乱码、无意义字符、空内容）
     if not question or all(c in "~!@#$%^&*()_+{}|[]\;':\",./<>?" for c in question):
-        return {**state, "is_invalid_question": True}
+        return { "classification": "invalid"}
+    
+    if state['classification'] == "error_feedback":
+        return {}
     
     try:
         # 获取启用的特殊问题流程
@@ -36,40 +39,38 @@ def judge_question_type(state: CustomerServiceRobotState) -> CustomerServiceRobo
         # Use Qwen3 to analyze question type
         model = get_qwen_model()
         
-        prompt = ChatPromptTemplate.from_template(
-            """You are an expert customer service question classifier. Analyze the following customer question and classify it into one of these categories:
+        prompt = SystemMessage(content=
+            f"""You are an expert customer service question classifier. Analyze the following customer question and classify it into one of these categories:
             
             Categories:
             - "invalid": The question is meaningless, contains only symbols, or is empty
             - "casual_chat": Greetings (like "hello", "hi"), emotional expressions (like "I'm frustrated", "thanks"), or casual conversation attempts with no specific service request
             - "general_kb": General questions that should be answered from the knowledge base
-            {specific_questions}
-            
-            Customer Question: {question}
-            history chat:{history}
+            {specific_questions_str}
             
             Respond with ONLY the category name (invalid, casual_chat, bank_card_apply, bank_card_trans_fail, general_kb, or the specific question key):"""
         )
         
-        chain = prompt | model | StrOutputParser()
-        result = chain.invoke({"question": question, "specific_questions": specific_questions_str,"history": history})
+        result = model.invoke([*messages,prompt])
 
         
         # Clean and parse the result
-        classification = result.strip().lower()
+        classification = result.content.strip().lower()
 
-        state.update({"classification": classification}) 
+        return { "classification": classification}
+
+        # state.update({"classification": classification}) 
         
         # 检查分类结果是否是启用的特殊问题key之一
-        enabled_keys = [item["key"].lower() for item in enabled_specific_questions]
-        if classification in enabled_keys:
-            return { "specific_question_type": classification, "is_invalid_question": False}
-        elif classification == "invalid":
-            return { "is_invalid_question": True}
-        elif classification == "casual_chat":
-            return { "specific_question_type": "casual_chat", "is_invalid_question": False}
-        else:  # general_kb or any other response
-            return { "specific_question_type": None, "is_invalid_question": False}
+        # enabled_keys = [item["key"].lower() for item in enabled_specific_questions]
+        # if classification in enabled_keys:
+        #     return { "specific_question_type": classification, "is_invalid_question": False}
+        # elif classification == "invalid":
+        #     return { "is_invalid_question": True}
+        # elif classification == "casual_chat":
+        #     return { "specific_question_type": "casual_chat", "is_invalid_question": False}
+        # else:  # general_kb or any other response
+        #     return { "specific_question_type": None, "is_invalid_question": False}
             
     except Exception as e:
         # Fallback to original keyword-based logic if Qwen3 fails
@@ -92,7 +93,7 @@ def judge_question_type(state: CustomerServiceRobotState) -> CustomerServiceRobo
 
 # 节点3：知识库匹配
 def match_kb_node(state: CustomerServiceRobotState) -> CustomerServiceRobotState:
-    question = state["question"]
+    question = state["messages"][-1].content
     
     # 使用向量库进行相似性搜索
     try:
@@ -107,22 +108,22 @@ def match_kb_node(state: CustomerServiceRobotState) -> CustomerServiceRobotState
             # 直接返回答案，不再调用大模型
             return {"messages":[AIMessage(content=answer)]}
         else:
-            # 没有找到匹配结果
-            raise Exception("No similar questions found in vector store")
+            return {"messages":[AIMessage(content="未找到有效的答案")]}
             
     except Exception as e:
         # 向量库查询失败或未找到匹配，生成未匹配错误反馈
         feedback_id = generate_id("feedback")
-        error_feedback = {
-            "feedback_id": feedback_id,
-            "error_type": ERROR_TYPES[0], # 知识库未匹配到正确答案
-            "error_desc": f"问题：{question} 未在知识库中匹配到答案",
-            "fix_status": "未修复"
-        }
-        # 保存错误反馈到数据库
+        chat_messages_str = str(state["messages"])
+        
+        # 保存错误反馈到数据库 - 使用新表结构
         db_execute(
-            "INSERT INTO error_feedback (feedback_id, session_id, question, robot_reply, error_type, error_desc, create_time, fix_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (feedback_id, state["session_id"], question, "", ERROR_TYPES[0], error_feedback["error_desc"], format_time(), "未修复")
+            """INSERT INTO error_feedback 
+               (feedback_id, user_id, session_id, chat_messages, feedback_error_type, 
+                feedback_error_detail, auto_fix_result, status, create_time, update_time) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (feedback_id, state["user_id"], state["session_id"], chat_messages_str, 
+             ERROR_TYPES[0], f"问题：{question} 未在知识库中匹配到答案", 
+             None, "待修复", format_time(), format_time())
         )
         return {"messages":[AIMessage(content=f"未找到有效的答案")]}
 
@@ -223,13 +224,13 @@ def _parse_output(text: str):
 # 节点5：无效问题处理
 def handle_invalid_question(state: CustomerServiceRobotState) -> CustomerServiceRobotState:
     reply = format_reply("你提出的问题无效，请提出具体的客服咨询问题，我将为你解答！", state["reply_style"])
-    return {"messages": [AIMessage(content=reply)]}
+    return {"messages": [AIMessage(content=reply)], "reply": reply}
 
 
 # 节点6：系统故障兜底
 def handle_system_error(state: CustomerServiceRobotState) -> CustomerServiceRobotState:
     reply = format_reply("抱歉，当前系统繁忙，请稍后再试，或联系人工客服（400-000-0000）！", state["reply_style"])
-    return {"messages": [AIMessage(content=reply)]}
+    return {"messages": [AIMessage(content=reply)], "reply": reply}
 
 def call_specific_tool_cond(state: CustomerServiceRobotState) -> str:
     last_message = state["messages"][-1]
@@ -240,97 +241,132 @@ def call_specific_tool_cond(state: CustomerServiceRobotState) -> str:
 
 # 节点7：错误自动修复
 def auto_fix_error(state: CustomerServiceRobotState) -> CustomerServiceRobotState:
-    error_feedback = state["error_feedback"]
-    if not error_feedback or error_feedback["fix_status"] == "已修复":
-        return state
-    # 不同错误类型的修复逻辑
-    error_type = error_feedback["error_type"]
-    fix_desc = ""
-    if error_type == ERROR_TYPES[0]: # 知识库未匹配
-        # 修复：补充问题到知识库（简化，实际需管理者确认）
-        fix_desc = f"已将问题「{state['question']}」补充至知识库，后续可匹配"
-    elif error_type == ERROR_TYPES[1]: # 操作步骤错误
-        # 修复：修正特定问题处理步骤
-        fix_desc = "已修正特定问题的操作步骤，重新调用工具可正常查询"
-    elif error_type == ERROR_TYPES[3]: # 工具调用失败
-        # 修复：重启工具调用服务
-        fix_desc = "已重启工具调用服务，可重新发起查询"
-    # 更新错误反馈状态
-    db_execute(
-        "UPDATE error_feedback SET fix_status = ?, fix_time = ? WHERE feedback_id = ?",
-        ("已修复", format_time(), error_feedback["feedback_id"])
+    """
+    自动修复错误函数，根据用户的历史对话和错误反馈来尝试修复错误，
+    同时把该错误信息记录到错误记录表中
+    """
+    # 获取当前会话的完整消息历史
+    messages = state["messages"]
+    if not messages:
+        return {"messages": [AIMessage(content="No message history available, unable to perform error repair.")]}
+    
+    # 从最后一条消息中提取错误反馈信息（JSON格式）
+    content = messages[-1].content
+    
+    
+    error_feedback_data = json.loads(content)
+    feedback_error_type = error_feedback_data.get("feedback_error_type")
+    feedback_error_detail = error_feedback_data.get("feedback_error_detail")
+        
+            
+
+    
+    # 创建错误反馈记录
+    feedback_id = ErrorFeedbackService.create_error_feedback(
+        user_id=state["user_id"],
+        session_id=state["session_id"],
+        chat_messages=str(messages),
+        feedback_error_type=feedback_error_type,
+        feedback_error_detail=feedback_error_detail,
+        status=ErrorFeedbackService.STATUS_PENDING
     )
-    # 更新状态
-    error_feedback["fix_status"] = "已修复"
-    return {**state, "error_feedback": error_feedback, "fix_desc": fix_desc}
+    
+    # 使用历史消息调用大模型尝试修复
+    try:
+        model = get_qwen_model()
+        
+        # 构建英文系统消息提示词，要求返回特定格式
+        system_message = SystemMessage(content="""You are an intelligent customer service assistant tasked with automatically repairing errors based on the complete conversation history and error feedback information.
+
+Your task is to carefully analyze the entire conversation history and the error feedback provided, then determine if you can provide an accurate and professional response.
+
+You MUST respond in the following EXACT format:
+result[true]:your_repair_answer_here
+OR
+result[false]:reason_why_cannot_repair
+
+Where:
+- Use "result[true]" if you can provide a reasonable answer based on the available information
+- Use "result[false]" if the information is insufficient to provide an accurate answer or if human assistance is required
+- Replace "your_repair_answer_here" with your actual repair answer when using result[true]
+- Replace "reason_why_cannot_repair" with a brief explanation when using result[false]
+
+Do not include any other text or formatting in your response. Only output the result in the specified format.""")
+        
+        
+        
+        auto_fix_result = model.invoke([*messages,system_message])
+        
+        # 解析大模型返回的特定格式结果
+        auto_fix_content = auto_fix_result.content
+        
+        # 使用正则表达式解析结果格式
+        
+        match = re.search(r'result\[(true|false)\]:(.*)', auto_fix_content.strip(), re.IGNORECASE)
+        is_repairable =False
+        if match:
+            is_repairable = match.group(1).lower() == 'true'
+            fix_result = match.group(2).strip()
+            
+            if is_repairable:
+                # 能够自动修复
+                status = ErrorFeedbackService.STATUS_AUTO_FIXED
+                fix_desc = "Successfully repaired automatically using large language model"
+                auto_fix_result_content = fix_result
+            else:
+                # 无法自动修复，标记为转人工
+                status = ErrorFeedbackService.STATUS_PENDING
+                fix_desc = "Human customer service assistance required"
+                auto_fix_result_content = f"Unable to automatically repair: {fix_result}"
+        else:
+            # 如果格式不符合预期，标记为无法修复
+            status = ErrorFeedbackService.STATUS_PENDING
+            fix_desc = "Automatic repair failed due to unexpected response format"
+            auto_fix_result_content = f"Unexpected response format from model: {auto_fix_content[:200]}..."
+            
+    except Exception as e:
+        # 大模型调用失败，标记为转人工
+        status = ErrorFeedbackService.STATUS_PENDING
+        fix_desc = f"Automatic repair failed: {str(e)}"
+        auto_fix_result_content = "Automatic repair failed, recommend transferring to human customer service"
+    
+    # 更新错误反馈记录
+    ErrorFeedbackService.update_error_feedback(
+        feedback_id=feedback_id,
+        auto_fix_result=auto_fix_result_content,
+        status=status
+    )
+
+    if is_repairable:
+        return {"messages":[auto_fix_result],"auto_fix_result":is_repairable}
+    else:
+        return {"messages":[AIMessage(content=auto_fix_result_content)],"auto_fix_result":False}
 
 # 节点8：处理闲聊、打招呼和情绪表达
 def handle_casual_chat(state: CustomerServiceRobotState) -> CustomerServiceRobotState:
-    question = state["question"]
-    reply_style = state["reply_style"]
+    messages = state["messages"]
     
     # Use Qwen to generate an appropriate friendly response
-    context = {
-        "question": question,
-        "reply_style": reply_style,
-        "instruction": "You are a friendly customer service assistant. Respond appropriately to greetings, emotional expressions, or casual chat, but gently guide the conversation back to customer service topics."
-    }
     
-    try:
-        model = get_qwen_model()
-        prompt = ChatPromptTemplate.from_template(
-            """You are a friendly customer service assistant. The user has sent a message that appears to be a greeting, emotional expression, or casual chat.
-
-User message: {question}
-
-Please respond in a warm, professional manner that acknowledges their message, but also gently guides them toward asking specific customer service questions if they need assistance.
-
-Response style: {reply_style}"""
-        )
-        chain = prompt | model
-        result = chain.invoke(context)
-        return {"messages":[result]}
-    except Exception as e:
-        # Fallback response if Qwen fails
-        default_responses = {
-            "formal": "您好！感谢您的问候。我是客服助手，如果您有任何银行相关的问题需要咨询，请随时告诉我。",
-            "casual": "你好呀！很高兴见到你！如果你有任何银行相关的问题需要帮助，尽管问我哦~",
-            "concise": "您好！我是客服助手，请问有什么可以帮您的？"
-        }
-        reply = default_responses.get(reply_style, default_responses["formal"])
+    system_message = SystemMessage(f"""You are a friendly customer service assistant. Respond appropriately to greetings, emotional expressions, or casual chat, but gently guide the conversation back to customer service topics.""")
     
-    return {"messages":[AIMessage(content=reply)]}
+    model = get_qwen_model()
+    result = model.invoke([*messages, system_message])
+    
+    return {"messages": [result]}
 
-# 条件判断：是否为无效问题
-def is_invalid_question_cond(state: CustomerServiceRobotState) -> str:
-    return "handle_invalid" if state["is_invalid_question"] else "judge_specific"
+def reply(state: CustomerServiceRobotState)-> CustomerServiceRobotState:
+    last = state["messages"][-1]
 
-# 条件判断：是否为特定问题
-def is_specific_question_cond(state: CustomerServiceRobotState) -> str:
-    return "call_specific_tool" if state.get("specific_question_type") else "match_kb"
+    return {"reply": last.content}
+
 
 def question_dispatch_cond(state: CustomerServiceRobotState) -> str:
+
     classification = state["classification"]
-    if classification == "invalid":
-        return "invalid"
-    elif classification == "casual_chat":
-        return "casual_chat"
-    elif classification == "general_kb":
-        return "general_kb"
+
+    if classification in ["invalid","general_kb","casual_chat","error_feedback"]:
+        return classification
     else:
         return "specific_question"
-
-
-
-# 条件判断：是否系统故障/有错误
-def has_error_cond(state: CustomerServiceRobotState) -> str:
-    if state["is_system_error"]:
-        return "handle_system_error"
-    elif state["error_feedback"]:
-        return "auto_fix_error"
-    else:
-        return "end"
-    
-def replay(state: CustomerServiceRobotState)->CustomerServiceRobotState:
-    last = state['messages'][-1]
-    return {"reply": last.content}
+        
