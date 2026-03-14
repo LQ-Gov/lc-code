@@ -1,4 +1,5 @@
-from typing import TypedDict, List, Optional, Dict, Any
+from typing import TypedDict, List, Optional, Dict, Any,Annotated
+from operator import add
 
 class CustomerServiceRobotState(TypedDict):
     """Customer service robot state definition for LangGraph"""
@@ -16,3 +17,4 @@ class CustomerServiceRobotState(TypedDict):
     specific_question_type: Optional[str]
     fix_desc: Optional[str]
     classification:str
+    messages: Annotated[list, add]

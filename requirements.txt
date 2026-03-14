@@ -12,6 +12,9 @@ lxml
 # Database
 sqlite3
 
+# Vector store
+chromadb
+
 # Other utilities
 urllib3
 

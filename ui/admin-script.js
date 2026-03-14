@@ -37,16 +37,24 @@ function showNotification(message, isSuccess = true) {
 // 切换知识库URL输入框显示/隐藏
 function toggleKbUrlInput() {
     const urlInput = document.getElementById('kb-url');
+    const urlDisplay = document.getElementById('kb-url-display');
     const editBtn = document.getElementById('kb-edit-btn');
+    const rebuildBtn = document.getElementById('kb-rebuild-btn');
     
-    if (urlInput.classList.contains('active')) {
+    if (urlInput.style.display === 'block') {
         // 当前是保存状态，执行保存操作
         saveKnowledgeBase();
     } else {
-        // 当前是编辑状态，显示输入框并切换按钮文本
-        urlInput.classList.add('active');
+        // 当前是显示状态，切换到编辑状态
+        urlInput.style.display = 'block';
+        urlDisplay.style.display = 'none';
+        urlInput.value = urlDisplay.textContent === '未设置' ? '' : urlDisplay.textContent;
         editBtn.textContent = '保存';
         editBtn.className = 'btn btn-success'; // 改为绿色保存按钮
+        // 如果有配置的URL，显示重建按钮
+        if (urlDisplay.textContent !== '未设置' && urlDisplay.textContent !== '加载失败') {
+            rebuildBtn.style.display = 'inline-block';
+        }
     }
 }
 
@@ -93,11 +101,15 @@ async function loadKnowledgeBases() {
                     <td class="actions">
                         <button class="btn" onclick="viewKnowledgeBaseDetails('${kb.id}')">详情</button>
                         <button class="btn btn-danger" onclick="deleteKnowledgeBase('${kb.id}')">删除</button>
-                        <button class="btn" onclick="rebuildKnowledgeBase('${kb.id}', '${kb.seed_url.replace(/'/g, "\\'")}')">重建</button>
+                        <button class="btn" onclick="editKnowledgeBaseUrl('${kb.id}', '${kb.seed_url.replace(/'/g, "\\'")}')">编辑URL</button>
+                        <button class="btn" onclick="rebuildKnowledgeBase('${kb.id}')">重新生成</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
+            
+            // 同时加载当前配置的URL到输入框（如果存在）
+            loadCurrentKnowledgeBaseUrl();
         } else {
             showNotification(`加载知识库失败: ${data.msg}`, false);
         }
@@ -106,7 +118,42 @@ async function loadKnowledgeBases() {
     }
 }
 
+// 加载当前配置的知识库URL
+async function loadCurrentKnowledgeBaseUrl() {
+    try {
+        const response = await fetch('/api/config/knowledge-base-url');
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            const urlDisplay = document.getElementById('kb-url-display');
+            const rebuildBtn = document.getElementById('kb-rebuild-btn');
+            if (data.data.url) {
+                urlDisplay.textContent = data.data.url;
+                urlDisplay.classList.remove('empty');
+                // 有URL配置时显示重建按钮
+                rebuildBtn.style.display = 'inline-block';
+            } else {
+                urlDisplay.textContent = '未设置';
+                urlDisplay.classList.add('empty');
+                rebuildBtn.style.display = 'none';
+            }
+            // 同时也设置input的值，以便编辑时使用
+            const urlInput = document.getElementById('kb-url');
+            urlInput.value = data.data.url || '';
+        }
+    } catch (error) {
+        console.log('加载当前知识库URL配置失败:', error);
+        const urlDisplay = document.getElementById('kb-url-display');
+        const rebuildBtn = document.getElementById('kb-rebuild-btn');
+        urlDisplay.textContent = '加载失败';
+        urlDisplay.classList.add('empty');
+        rebuildBtn.style.display = 'none';
+    }
+}
+
+// 知识库管理相关变量
 let editingKbId = null;
+let editingKbOriginalUrl = null;
 
 // 查看知识库详情（在新窗口或模态框中显示完整内容）
 function viewKnowledgeBaseDetails(id) {
@@ -126,40 +173,26 @@ async function saveKnowledgeBase() {
     try {
         document.getElementById('kb-loading').style.display = 'block';
         
-        let response;
-        if (editingKbId) {
-            // 更新知识库
-            response = await fetch(`/api/knowledge-bases/${editingKbId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    url: url
-                })
-            });
-        } else {
-            // 创建新知识库
-            response = await fetch('/api/knowledge-bases', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    url: url
-                })
-            });
-        }
+        // 调用配置API只更新配置
+        const response = await fetch('/api/config/knowledge-base-url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                url: url
+            })
+        });
         
         const data = await response.json();
         
         if (data.code === 200) {
-            showNotification(editingKbId ? '知识库更新成功' : '知识库创建成功');
+            showNotification('知识库URL配置已保存');
             // 隐藏输入框并重置
             resetKbForm();
-            loadKnowledgeBases(); // 重新加载列表
+            loadKnowledgeBases(); // 重新加载列表以显示最新配置状态
         } else {
-            showNotification(`操作失败: ${data.msg}`, false);
+            showNotification(`保存配置失败: ${data.msg}`, false);
         }
     } catch (error) {
         showNotification(`保存知识库时发生错误: ${error.message}`, false);
@@ -171,13 +204,22 @@ async function saveKnowledgeBase() {
 // 重置知识库表单
 function resetKbForm() {
     const urlInput = document.getElementById('kb-url');
+    const urlDisplay = document.getElementById('kb-url-display');
     const editBtn = document.getElementById('kb-edit-btn');
+    const rebuildBtn = document.getElementById('kb-rebuild-btn');
     
-    urlInput.classList.remove('active');
-    urlInput.value = '';
+    urlInput.style.display = 'none';
+    urlDisplay.style.display = 'block';
     editBtn.textContent = '编辑';
-    editBtn.className = 'btn'; // 恢复为蓝色编辑按钮
+    editBtn.className = 'btn';
+    // 根据是否有配置URL决定是否显示重建按钮
+    if (urlDisplay.textContent !== '未设置' && urlDisplay.textContent !== '加载失败') {
+        rebuildBtn.style.display = 'inline-block';
+    } else {
+        rebuildBtn.style.display = 'none';
+    }
     editingKbId = null;
+    editingKbOriginalUrl = null; // 重置原始URL
 }
 
 async function deleteKnowledgeBase(id) {
@@ -203,33 +245,80 @@ async function deleteKnowledgeBase(id) {
     }
 }
 
-async function rebuildKnowledgeBase(id, url) {
-    if (!confirm('确定要重建这个知识库吗？这将重新爬取该URL的内容。')) {
+// 编辑知识库URL
+function editKnowledgeBaseUrl(id, currentUrl) {
+    const urlInput = document.getElementById('kb-url');
+    const editBtn = document.getElementById('kb-edit-btn');
+    const rebuildBtn = document.getElementById('kb-rebuild-btn');
+    
+    // 设置当前URL到输入框
+    urlInput.value = currentUrl;
+    urlInput.classList.add('active');
+    editBtn.textContent = '保存';
+    editBtn.className = 'btn btn-success';
+    editingKbId = id;
+    editingKbOriginalUrl = currentUrl; // 保存原始URL
+    rebuildBtn.style.display = 'inline-block';
+}
+
+// 重新生成知识库（重新爬取）
+async function rebuildKnowledgeBase(id) {
+    if (!confirm('确定要重新生成这个知识库吗？这将根据当前知识库URL重新爬取数据。')) {
         return;
     }
     
     try {
         document.getElementById('kb-loading').style.display = 'block';
         
-        const response = await fetch('/api/crawler/crawl', {
+        // 调用正确的API接口：/api/knowledge-bases/rebuild/{id}
+        const response = await fetch(`/api/knowledge-bases/rebuild/${id}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                seed_url: url
-            })
+            }
         });
         
         const data = await response.json();
         
         if (data.code === 200) {
-            showNotification('知识库重建任务已启动');
+            showNotification('知识库重新生成任务已完成');
+            loadKnowledgeBases(); // 重新加载列表以显示最新数据
         } else {
-            showNotification(`重建任务启动失败: ${data.msg}`, false);
+            showNotification(`重新生成失败: ${data.msg}`, false);
         }
     } catch (error) {
-        showNotification(`启动重建任务时发生错误: ${error.message}`, false);
+        showNotification(`重新生成知识库时发生错误: ${error.message}`, false);
+    } finally {
+        document.getElementById('kb-loading').style.display = 'none';
+    }
+}
+
+// 重建当前配置的知识库
+async function rebuildCurrentKnowledgeBase() {
+    if (!confirm('确定要重建当前配置的知识库吗？这将清空现有数据并重新爬取。')) {
+        return;
+    }
+    
+    try {
+        document.getElementById('kb-loading').style.display = 'block';
+        
+        const response = await fetch('/api/knowledge-bases/rebuild-current', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            showNotification('知识库重建任务已完成');
+            loadKnowledgeBases(); // 重新加载列表以显示最新数据
+        } else {
+            showNotification(`重建失败: ${data.msg}`, false);
+        }
+    } catch (error) {
+        showNotification(`重建知识库时发生错误: ${error.message}`, false);
     } finally {
         document.getElementById('kb-loading').style.display = 'none';
     }
@@ -246,14 +335,19 @@ async function loadSpecialFlows() {
             tbody.innerHTML = '';
             
             data.data.forEach(flow => {
+                const statusText = flow.status === 'active' ? '启用' : '禁用';
+                const statusClass = flow.status === 'active' ? '' : 'btn-secondary';
+                const toggleText = flow.status === 'active' ? '禁用' : '启用';
+                
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${flow.key}</td>
                     <td>${flow.desc}</td>
                     <td>${flow.prompt}</td>
-                    <td>${flow.status}</td>
+                    <td>${statusText}</td>
                     <td class="actions">
                         <button class="btn" onclick="editSpecialFlow('${flow.key.replace(/'/g, "\\'")}', '${flow.desc.replace(/'/g, "\\'")}', '${flow.prompt.replace(/'/g, "\\'")}', '${flow.status}')">编辑</button>
+                        <button class="btn ${statusClass}" onclick="toggleSpecialFlowStatus('${flow.key.replace(/'/g, "\\'")}', '${flow.status}')">${toggleText}</button>
                         <button class="btn btn-danger" onclick="deleteSpecialFlow('${flow.key.replace(/'/g, "\\'")}')">删除</button>
                     </td>
                 `;
@@ -267,14 +361,90 @@ async function loadSpecialFlows() {
     }
 }
 
+// 显示特殊流程模态框
+function showFlowModal() {
+    document.getElementById('flowModalTitle').textContent = '新增特殊流程';
+    document.getElementById('flow-key').value = '';
+    document.getElementById('flow-desc').value = '';
+    document.getElementById('flow-prompt').value = '';
+    document.getElementById('flow-status').value = 'active';
+    editingFlowKey = null;
+    document.getElementById('flowModal').style.display = 'block';
+    
+    // 添加关闭事件监听器
+    setupFlowModalClose();
+}
+
+// 关闭特殊流程模态框
+function closeFlowModal() {
+    document.getElementById('flowModal').style.display = 'none';
+}
+
+// 设置模态框关闭事件
+function setupFlowModalClose() {
+    const modal = document.getElementById('flowModal');
+    const span = modal.querySelector('.close');
+    
+    // 确保只添加一次事件监听器
+    if (!modal.dataset.hasClickListener) {
+        span.onclick = function() {
+            closeFlowModal();
+        };
+        
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                closeFlowModal();
+            }
+        };
+        
+        modal.dataset.hasClickListener = 'true';
+    }
+}
+
 let editingFlowKey = null;
 
 function editSpecialFlow(key, desc, prompt, status) {
+    document.getElementById('flowModalTitle').textContent = '编辑特殊流程';
     document.getElementById('flow-key').value = key;
     document.getElementById('flow-desc').value = desc;
     document.getElementById('flow-prompt').value = prompt;
     document.getElementById('flow-status').value = status;
     editingFlowKey = key;
+    document.getElementById('flowModal').style.display = 'block';
+    setupFlowModalClose();
+}
+
+// 切换特殊流程状态（启用/禁用）
+async function toggleSpecialFlowStatus(key, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const confirmText = newStatus === 'active' ? '确定要启用这个特殊流程吗？' : '确定要禁用这个特殊流程吗？';
+    
+    if (!confirm(confirmText)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/special-flows/${key}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                status: newStatus
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.code === 200) {
+            showNotification(newStatus === 'active' ? '特殊流程已启用' : '特殊流程已禁用');
+            loadSpecialFlows(); // 重新加载列表
+        } else {
+            showNotification(`操作失败: ${data.msg}`, false);
+        }
+    } catch (error) {
+        showNotification(`切换状态时发生错误: ${error.message}`, false);
+    }
 }
 
 async function saveSpecialFlow() {
@@ -335,11 +505,7 @@ async function saveSpecialFlow() {
         
         if (data.code === 200) {
             showNotification(editingFlowKey ? '特殊流程更新成功' : '特殊流程创建成功');
-            document.getElementById('flow-key').value = '';
-            document.getElementById('flow-desc').value = '';
-            document.getElementById('flow-prompt').value = '';
-            document.getElementById('flow-status').value = 'active';
-            editingFlowKey = null;
+            closeFlowModal();
             loadSpecialFlows(); // 重新加载列表
         } else {
             showNotification(`操作失败: ${data.msg}`, false);
@@ -375,8 +541,6 @@ async function deleteSpecialFlow(key) {
 }
 
 // 错误反馈管理功能
-let currentFeedbackId = null;
-
 async function loadErrorFeedbacks() {
     try {
         document.getElementById('feedback-loading').style.display = 'block';
@@ -502,6 +666,9 @@ async function deleteErrorFeedback(feedbackId) {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    // 默认加载知识库数据
+    // 默认加载第一个标签页的内容
     loadKnowledgeBases();
+    
+    // 确保在页面加载时也加载当前的知识库URL配置（但不显示输入框）
+    loadCurrentKnowledgeBaseUrl();
 });

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, Body
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -6,16 +6,17 @@ import os
 from pydantic import BaseModel
 from core.robot.graph import robot_invoke
 from core.agent.graph import meta_agent_invoke
-from core.common.utils import generate_id
 from core.crawl.graph import crawler_graph
 from core.crawl.state import CrawlState
-from core.common.db import db_query, db_execute, init_db
+from core.common.db import init_db
 from datetime import datetime
 
 # 导入独立的API模块
 from web.knowledge_base_api import kb_router
 from web.special_flow_api import sf_router
 from web.error_feedback_api import ef_router
+from web.vector_store_api import vs_router
+from web.config_api import config_router
 
 app = FastAPI(title="客服AI机器人+元智能体API", version="1.0")
 
@@ -32,6 +33,8 @@ app.add_middleware(
 app.include_router(kb_router)
 app.include_router(sf_router)
 app.include_router(ef_router)
+app.include_router(vs_router)
+app.include_router(config_router)
 
 # 模型定义
 class RobotConsultRequest(BaseModel):
@@ -111,7 +114,6 @@ def health_check():
 # Root route to serve the main frontend page
 @app.get("/", response_class=HTMLResponse, summary="访问前端页面")
 async def serve_frontend():
-    # Read and return the main HTML file
     ui_index_path = os.path.join(os.path.dirname(__file__), "..", "ui", "index.html")
     if os.path.exists(ui_index_path):
         with open(ui_index_path, "r", encoding="utf-8") as f:

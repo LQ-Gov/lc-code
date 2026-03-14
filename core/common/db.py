@@ -35,11 +35,24 @@ def init_db():
                   questions TEXT,
                   answers TEXT,
                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    # 7. 配置表 - NEW
+    c.execute('''CREATE TABLE IF NOT EXISTS configurations
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  key TEXT NOT NULL UNIQUE,
+                  value TEXT NOT NULL)''')
+    
+    # 初始化默认知识库配置（如果不存在）
+    c.execute("SELECT COUNT(*) FROM configurations WHERE key = 'knowledge_base_url'")
+    if c.fetchone()[0] == 0:
+        c.execute("INSERT INTO configurations (key, value) VALUES (?, ?)", 
+                  ('knowledge_base_url', ''))
+    
     conn.commit()
     conn.close()
 
 # 通用数据库操作函数
 def db_query(sql, params=()):
+    """执行查询操作，返回所有结果"""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(sql, params)
@@ -48,12 +61,20 @@ def db_query(sql, params=()):
     return res
 
 def db_execute(sql, params=()):
+    """执行非查询操作（INSERT, UPDATE, DELETE），返回最后插入的行ID"""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(sql, params)
     conn.commit()
+    lastrowid = c.lastrowid
     conn.close()
-    return c.lastrowid
+    return lastrowid
 
-# 初始化数据库
-init_db()
+def db_fetchone(sql, params=()):
+    """执行查询操作，返回单行结果"""
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(sql, params)
+    res = c.fetchone()
+    conn.close()
+    return res

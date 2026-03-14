@@ -1,9 +1,8 @@
 # 客服AI机器人 UI
 
 ## 项目结构
-- `index.html` - 主页面
+- `index.html` - 主页面（基于Alpine.js的现代化版本）
 - `styles.css` - 样式文件  
-- `script.js` - 交互逻辑和API集成
 
 ## 运行说明
 

@@ -6,18 +6,21 @@ from core.robot.nodes import (
     load_knowledge_base, judge_question_type, match_kb_node,
     handle_specific_question, handle_invalid_question, handle_system_error,
     auto_fix_error, is_invalid_question_cond, is_specific_question_cond,
-    has_error_cond,question_dispatch_cond,call_specific_tool_cond, handle_casual_chat
+    has_error_cond,question_dispatch_cond,call_specific_tool_cond, handle_casual_chat,replay
 )
 
 from core.robot.tools import query_bank_card_apply_progress,query_bank_card_trans_fail
 from core.common.config import DEFAULT_KNOWLEDGE_BASE_URL, DEFAULT_REPLY_STYLE
+
+# 导入InMemorySaver用于短期记忆
+from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.messages import HumanMessage, AIMessage
 
 # 构建客服AI机器人StateGraph
 def build_robot_graph():
     graph = StateGraph(CustomerServiceRobotState)
 
     # 添加节点
-    graph.add_node("load_knowledge_base", load_knowledge_base)
     graph.add_node("judge_question_type", judge_question_type)
     graph.add_node("handle_invalid", handle_invalid_question)
     graph.add_node("handle_specific_question",handle_specific_question)
@@ -26,6 +29,7 @@ def build_robot_graph():
     graph.add_node("handle_system_error", handle_system_error)
     graph.add_node("auto_fix_error", auto_fix_error)
     graph.add_node("handle_casual_chat", handle_casual_chat)
+    graph.add_node("replay",replay)
 
     # 定义节点流转
     graph.add_edge(START, "judge_question_type")
@@ -40,10 +44,13 @@ def build_robot_graph():
     # 特定问题处理(ReAct模式)
     graph.add_conditional_edges("handle_specific_question", call_specific_tool_cond, {
         "call_tool": "call_specific_tool",
-        "end": END
+        "end": "replay"
     })
 
     graph.add_edge("call_specific_tool","handle_specific_question")
+    graph.add_edge("handle_invalid","replay")
+    graph.add_edge("handle_general_kb","replay")
+    graph.add_edge("handle_casual_chat","replay")
 
     
     # 特定问题工具调用后判断是否有错误
@@ -58,22 +65,16 @@ def build_robot_graph():
     #     "handle_system_error": "handle_system_error",
     #     "auto_fix_error": "auto_fix_error",
     #     "end": END
-    # })
-    
-    # 无效问题处理后结束
-    graph.add_edge("handle_invalid", END)
-    
-    # 闲聊处理后结束
-    graph.add_edge("handle_casual_chat", END)
-    
+    # })   
     # 错误修复后结束
     # graph.add_edge("auto_fix_error", END)
     
     # 系统故障后结束
     # graph.add_edge("handle_system_error", END)
 
-    # 编译图
-    return graph.compile()
+    # 编译图，添加MemorySaver检查点
+    memory = MemorySaver()
+    return graph.compile(checkpointer=memory)
 
 # 初始化机器人图
 robot_graph = build_robot_graph()
@@ -84,19 +85,23 @@ robot_graph.get_graph().print_ascii()
 def robot_invoke(user_id: str, question: str, session_id: str = None, kb_url: str = None, reply_style: str = None):
     from core.common.utils import generate_id, format_time
     from core.common.db import db_execute, db_query
-    # 如果提供了session_id，尝试从数据库中读取历史会话
-    existing_session = None
-    if session_id:
-        existing_session = db_query(
-            "SELECT context FROM customer_sessions WHERE session_id = ? AND user_id = ?",
-            (session_id, user_id)
-        )
     
     # 初始化会话ID
-    if not session_id or not existing_session:
-        session_id = session_id or generate_id("session")
+    if not session_id:
+        session_id = generate_id("session")
     
-    # 初始化状态
+    # 运行图，使用session_id作为线程ID来维护对话上下文
+    config = {"configurable": {"thread_id": session_id}}
+    
+    # 获取当前会话的历史消息（如果有的话）
+    current_state = None
+    try:
+        current_state = robot_graph.get_state(config)
+    except Exception:
+        # 如果是新会话，current_state可能为None
+        pass
+    
+    # 准备初始状态
     initial_state = {
         "session_id": session_id,
         "user_id": user_id,
@@ -109,23 +114,20 @@ def robot_invoke(user_id: str, question: str, session_id: str = None, kb_url: st
         "is_invalid_question": False,
         "is_system_error": False,
         "specific_question_type": None,
-        "fix_desc": None
+        "fix_desc": None,
+        "classification": "",
+        "messages": []
     }
     
-    # 如果存在历史会话，恢复上下文
-    if existing_session:
-        try:
-            import ast
-            # 尝试解析存储的上下文
-            history = ast.literal_eval(existing_session[0][0])
-            if isinstance(history, list):
-                initial_state["history"] = history
-        except (ValueError, SyntaxError, IndexError):
-            # 如果解析失败，保持空的历史记录
-            pass
+    # 如果当前有状态，继承现有的messages
+    # if current_state and current_state.values:
+    #     initial_state["messages"] = current_state.values.get("messages", [])
+    
+    # 将当前用户消息添加到消息历史中
+    initial_state["messages"].append(HumanMessage(content=question))
     
     # 运行图
-    result = robot_graph.invoke(initial_state)
+    result = robot_graph.invoke(initial_state, config)
     # 保存会话记录到数据库
     db_execute(
         "INSERT OR REPLACE INTO customer_sessions (session_id, user_id, create_time, last_msg_time, context, feedback_status) VALUES (?, ?, ?, ?, ?, ?)",

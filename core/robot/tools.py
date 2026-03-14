@@ -44,14 +44,3 @@ def query_bank_card_trans_fail(serial_no: str) -> Dict[str, Any]:
     ]
     
     return random.choice(failure_scenarios)
-
-def match_knowledge_base(question: str, kb_content: str) -> Dict[str, Any]:
-    """Match question with knowledge base using Qwen3"""
-    return match_knowledge_base_with_qwen(question, kb_content)
-
-# Tool mapping for easy access
-TOOL_MAP = {
-    "query_bank_card_apply_progress": query_bank_card_apply_progress,
-    "query_bank_card_trans_fail": query_bank_card_trans_fail,
-    "match_knowledge_base": match_knowledge_base
-}

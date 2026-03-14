@@ -8,6 +8,8 @@ load_dotenv()
 DEFAULT_KNOWLEDGE_BASE_URL = os.getenv("DEFAULT_KNOWLEDGE_BASE_URL")
 # 数据库配置
 DB_PATH = os.getenv("DB_PATH")
+# 向量库存储路径配置
+CHROMA_PATH = os.getenv("CHROMA_PATH", "./data/chroma")
 # 机器人配置
 DEFAULT_REPLY_STYLE = os.getenv("DEFAULT_REPLY_STYLE", "正式")
 AUTO_FIX_TIMEOUT = int(os.getenv("AUTO_FIX_TIMEOUT", 600))
