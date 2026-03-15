@@ -16,7 +16,7 @@ def check_kb_data_format():
     
     # 查询所有爬虫结果
     sql = """
-        SELECT seed_url, questions, answers 
+        SELECT id, seed_url, questions, answers 
         FROM crawler_results 
         WHERE questions IS NOT NULL AND answers IS NOT NULL
         LIMIT 5
@@ -28,11 +28,12 @@ def check_kb_data_format():
         return
     
     for i, result in enumerate(results):
-        seed_url = result[0]
-        questions = result[1]
-        answers = result[2]
+        record_id = result[0]
+        seed_url = result[1]
+        questions = result[2]
+        answers = result[3]
         
-        print(f"\n--- 记录 {i+1} ---")
+        print(f"\n--- 记录 {i+1} (ID: {record_id}) ---")
         print(f"URL: {seed_url}")
         print(f"Questions类型: {type(questions)}")
         print(f"Questions长度: {len(questions) if questions else 0}")

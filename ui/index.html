@@ -5,6 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>客服AI机器人 - Alpine.js版本</title>
     <link rel="stylesheet" href="/static/styles.css">
+<!-- 添加自定义样式 -->
+<style>
+.fix-confirmation {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #666;
+}
+
+.fix-confirmation button {
+    margin-left: 15px;
+    padding: 4px 12px;
+    border: none;
+    border-radius: 15px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-fix-confirm {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-fix-confirm:hover {
+    background-color: #3d8b40;
+}
+
+.btn-fix-deny {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn-fix-deny:hover {
+    background-color: #da190b;
+}
+</style>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -23,6 +63,12 @@
                 <div :class="`message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`">
                     <div x-html="renderMarkdown(message.text)"></div>
                     <div class="message-time" x-text="message.time"></div>
+                    <!-- 修复结果确认区域 -->
+                    <div x-show="message.show_fix_confirmation" class="fix-confirmation">
+                        <span>修复结果是否符合正确？</span>
+                        <button @click="confirmFixResult(message.feedback_id, true)" class="btn-correct">正确</button>
+                        <button @click="confirmFixResult(message.feedback_id, false)" class="btn-wrong">错误</button>
+                    </div>
                 </div>
             </template>
             
@@ -90,7 +136,7 @@
                 <label for="errorDescription">详细错误描述:</label>
                 <textarea x-model="feedback.description" rows="4" placeholder="请详细描述机器人回答的错误..."></textarea>
             </div>
-            <button @click="submitFeedback" class="btn" :disabled="!feedback.description.trim()">提交反馈</button>
+            <button @click="submitFeedback" class="btn">提交反馈</button>
         </div>
     </div>
 
@@ -158,6 +204,7 @@
                     this.currentReply = text;
                     this.scrollToBottom();
                 },
+                
                 
                 // Send message
                 async sendMessage() {
@@ -260,41 +307,103 @@
                 
                 // Submit feedback
                 async submitFeedback() {
-                    if (!this.feedback.description.trim()) {
-                        alert('请填写详细的错误描述');
-                        return;
-                    }
+                    // 立即关闭反馈窗口
+                    this.showFeedbackModal = false;
+                    const tempDescription = this.feedback.description;
+                    const tempErrorType = this.feedback.errorType;
+                    this.feedback.description = '';
+                    
+                    // 添加等待回复消息
+                    const waitingMessage = {
+                        id: Date.now(),
+                        sender: 'bot',
+                        text: '正在处理您的错误反馈，请稍候...',
+                        time: this.getCurrentTime(),
+                        is_waiting_feedback: true
+                    };
+                    this.messages.push(waitingMessage);
+                    this.scrollToBottom();
                     
                     try {
+                        // 构建错误反馈JSON数据
                         const feedbackData = {
-                            session_id: this.sessionId,
-                            user_id: this.userId,
-                            chat_messages: JSON.stringify(this.messages),
-                            feedback_error_type: this.feedback.errorType,
-                            feedback_error_detail: this.feedback.description
+                            feedback_error_type: tempErrorType,
+                            feedback_error_detail: tempDescription
                         };
                         
-                        const response = await fetch('/api/error-feedback', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(feedbackData)
-                        });
+                        // 调用机器人咨询接口，传入错误反馈数据和classification
+                        const response = await this.callBackendAPIWithErrorFeedback(feedbackData);
                         
-                        const result = await response.json();
+                        // 移除等待消息
+                        const waitingIndex = this.messages.findIndex(msg => msg.is_waiting_feedback);
+                        if (waitingIndex !== -1) {
+                            this.messages.splice(waitingIndex, 1);
+                        }
                         
-                        if (result.code === 200) {
-                            alert('错误反馈提交成功，感谢您的反馈！');
-                            this.showFeedbackModal = false;
-                            this.feedback.description = '';
+                        if (response.code === 200) {
+                            const replyData = response.data;
+                            
+                            // 添加机器人回复消息
+                            this.addBotMessage(replyData.reply);
+                            
+                            // 检查是否包含feedback_id和auto_fix_result字段
+                            if (replyData.error_feedback_result && replyData.error_feedback_result.feedback_id && 
+                                replyData.error_feedback_result.auto_fix_result !== undefined) {
+                                // 在最后一条消息后面添加特殊处理
+                                this.messages[this.messages.length - 1].feedback_id = replyData.error_feedback_result.feedback_id;
+                                this.messages[this.messages.length - 1].auto_fix_result = replyData.error_feedback_result.auto_fix_result;
+                                
+                                // 如果auto_fix_result为 true，显示确认按钮
+                                if (replyData.error_feedback_result.auto_fix_result === true) {
+                                    this.messages[this.messages.length - 1].show_fix_confirmation = true;
+                                }
+                            }
                         } else {
-                            alert(`提交失败: ${result.msg}`);
+                            alert(`提交失败: ${response.msg}`);
+                            // 如果失败，添加错误消息
+                            this.addBotMessage('抱歉，处理错误反馈时出现问题，请稍后再试。');
                         }
                     } catch (error) {
                         console.error('提交错误反馈时出错:', error);
+                        // 移除等待消息（如果还存在）
+                        const waitingIndex = this.messages.findIndex(msg => msg.is_waiting_feedback);
+                        if (waitingIndex !== -1) {
+                            this.messages.splice(waitingIndex, 1);
+                        }
                         alert('提交失败，请稍后再试');
+                        this.addBotMessage('抱歉，处理错误反馈时出现问题，请稍后再试。');
                     }
+                },
+                
+                // Call backend API with error feedback
+                async callBackendAPIWithErrorFeedback(feedbackData) {
+                    const apiUrl = '/api/robot/consult';
+                    
+                    const requestBody = {
+                        user_id: this.userId,
+                        question: JSON.stringify(feedbackData),
+                        classification: "error_feedback"
+                    };
+                    
+                    // 只有当sessionId有有效值时才添加session_id字段
+                    if (this.sessionId) {
+                        requestBody.session_id = this.sessionId;
+                    }
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    return data;
                 },
                 
                 // Transfer to human
@@ -310,7 +419,42 @@
                         console.error('转接人工客服失败:', error);
                         alert('转接失败，请稍后再试或联系技术支持。');
                     }
-                }
+                },
+                
+                // Confirm fix result
+                async confirmFixResult(feedbackId, isCorrect) {
+                    try {
+                        const status = isCorrect ? 
+                            '自动修复_用户反馈正确' : '自动修复_用户反馈错误';
+                        
+                        const response = await fetch(`/api/error-feedback/${feedbackId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                status: status
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.code === 200) {
+                            // 更新消息状态，隐藏确认按钮
+                            const messageIndex = this.messages.findIndex(msg => msg.feedback_id === feedbackId);
+                            if (messageIndex !== -1) {
+                                this.messages[messageIndex].show_fix_confirmation = false;
+                                this.messages[messageIndex].fix_confirmed = true;
+                                this.messages[messageIndex].confirmation_result = isCorrect ? '正确' : '错误';
+                            }
+                        } else {
+                            alert(`更新失败: ${result.msg}`);
+                        }
+                    } catch (error) {
+                        console.error('更新修复结果时出错:', error);
+                        alert('更新失败，请稍后再试');
+                    }
+                },
             };
         }
     </script>

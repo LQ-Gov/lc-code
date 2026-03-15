@@ -83,7 +83,7 @@ robot_graph = build_robot_graph()
 robot_graph.get_graph().print_ascii()
 
 # 机器人调用入口
-def robot_invoke(user_id: str, question: str, session_id: str = None, kb_url: str = None, reply_style: str = None):
+def robot_invoke(user_id: str, question: str, session_id: str = None, reply_style: str = None, classification: str = ""):
     from core.common.utils import generate_id, format_time
     from core.common.db import db_execute, db_query
     
@@ -116,7 +116,7 @@ def robot_invoke(user_id: str, question: str, session_id: str = None, kb_url: st
         "is_system_error": False,
         "specific_question_type": None,
         "fix_desc": None,
-        "classification": "",
+        "classification": classification,
         "messages": []
     }
     

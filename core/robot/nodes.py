@@ -294,16 +294,14 @@ Where:
 Do not include any other text or formatting in your response. Only output the result in the specified format.""")
         
         
-        
         auto_fix_result = model.invoke([*messages,system_message])
         
         # 解析大模型返回的特定格式结果
         auto_fix_content = auto_fix_result.content
         
         # 使用正则表达式解析结果格式
-        
         match = re.search(r'result\[(true|false)\]:(.*)', auto_fix_content.strip(), re.IGNORECASE)
-        is_repairable =False
+        is_repairable = False
         if match:
             is_repairable = match.group(1).lower() == 'true'
             fix_result = match.group(2).strip()
@@ -323,12 +321,14 @@ Do not include any other text or formatting in your response. Only output the re
             status = ErrorFeedbackService.STATUS_PENDING
             fix_desc = "Automatic repair failed due to unexpected response format"
             auto_fix_result_content = f"Unexpected response format from model: {auto_fix_content[:200]}..."
+            is_repairable = False
             
     except Exception as e:
         # 大模型调用失败，标记为转人工
         status = ErrorFeedbackService.STATUS_PENDING
         fix_desc = f"Automatic repair failed: {str(e)}"
         auto_fix_result_content = "Automatic repair failed, recommend transferring to human customer service"
+        is_repairable = False
     
     # 更新错误反馈记录
     ErrorFeedbackService.update_error_feedback(
@@ -337,10 +337,7 @@ Do not include any other text or formatting in your response. Only output the re
         status=status
     )
 
-    if is_repairable:
-        return {"messages":[auto_fix_result],"auto_fix_result":is_repairable}
-    else:
-        return {"messages":[AIMessage(content=auto_fix_result_content)],"auto_fix_result":False}
+    return {"messages":[AIMessage(content=auto_fix_result_content)],"auto_fix_result":is_repairable,"feedback_id":feedback_id}
 
 # 节点8：处理闲聊、打招呼和情绪表达
 def handle_casual_chat(state: CustomerServiceRobotState) -> CustomerServiceRobotState:

@@ -12,6 +12,7 @@ class CustomerServiceRobotState(TypedDict):
     reply: Optional[str]
     error_feedback: Optional[Dict[str, Any]]
     auto_fix_result:bool
+    feedback_id: Optional[str]
     reply_style: str
     is_invalid_question: bool
     is_system_error: bool

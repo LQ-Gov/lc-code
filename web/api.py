@@ -41,7 +41,7 @@ class RobotConsultRequest(BaseModel):
     user_id: str
     question: str
     session_id: str = None
-    kb_url: str = None
+    classification:str=None
     reply_style: str = None
 
 class MetaAgentGenerateRequest(BaseModel):
@@ -60,16 +60,25 @@ def robot_consult(req: RobotConsultRequest):
         user_id=req.user_id,
         question=req.question,
         session_id=req.session_id,
-        kb_url=req.kb_url,
+        classification=req.classification,
         reply_style=req.reply_style
     )
+    
+    # 构建错误反馈信息
+    error_feedback_info = None
+    if result.get("feedback_id") or result.get("auto_fix_result") is not None:
+        error_feedback_info = {
+            "feedback_id": result.get("feedback_id"),
+            "auto_fix_result": result.get("auto_fix_result")
+        }
+    
     return {
         "code": 200,
         "msg": "success",
         "data": {
             "session_id": result["session_id"],
             "reply": result["reply"],
-            "error_feedback": result["error_feedback"],
+            "error_feedback_result": error_feedback_info,
             "tool_call_result": result["tool_call_result"]
         }
     }

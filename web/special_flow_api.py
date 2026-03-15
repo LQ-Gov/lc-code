@@ -11,13 +11,13 @@ sf_router = APIRouter(prefix="/api/special-flows", tags=["special_flows"])
 class SpecialFlowRequest(BaseModel):
     key: str
     desc: str
-    prompt: str
+    flow: str
     status: str = "active"
 
 
 class UpdateSpecialFlowRequest(BaseModel):
     desc: str
-    prompt: str
+    flow: str
     status: str = "active"
 
 
@@ -27,7 +27,6 @@ class SpecialFlow(BaseModel):
     desc: str
     flow: str
     status: str
-    prompt: str
 
 
 @sf_router.get("", response_model=dict)
@@ -60,8 +59,8 @@ def create_special_flow(req: SpecialFlowRequest):
     """
     try:
         db_execute(
-            "INSERT INTO specific_question_flows (key, desc, flow, status, prompt) VALUES (?, ?, ?, ?, ?)",
-            (req.key, req.desc, "", req.status, req.prompt)
+            "INSERT INTO specific_question_flows (key, desc, flow, status) VALUES (?, ?, ?, ?, ?)",
+            (req.key, req.desc, req.flow, req.status)
         )
         return {"code": 200, "msg": "特殊问题流程创建成功", "data": {}}
     except Exception as e:
@@ -75,8 +74,8 @@ def update_special_flow(key: str, req: UpdateSpecialFlowRequest):
     """
     try:
         db_execute(
-            "UPDATE specific_question_flows SET desc = ?, flow = ?, status = ?, prompt = ? WHERE key = ?",
-            (req.desc, "", req.status, req.prompt, key)
+            "UPDATE specific_question_flows SET desc = ?, flow = ?, status = ? WHERE key = ?",
+            (req.desc, req.flow, req.status, key)
         )
         return {"code": 200, "msg": "特殊问题流程更新成功", "data": {}}
     except Exception as e:

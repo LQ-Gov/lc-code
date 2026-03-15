@@ -10,6 +10,7 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS customer_sessions
                  (session_id TEXT PRIMARY KEY, user_id TEXT, create_time TEXT, 
                   last_msg_time TEXT, context TEXT, feedback_status TEXT)''')
+    
     # 2. 错误反馈表 - 重新设计
     c.execute('''CREATE TABLE IF NOT EXISTS error_feedback
                  (feedback_id TEXT PRIMARY KEY, 

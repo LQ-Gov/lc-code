@@ -459,6 +459,53 @@ body {
     background-color: #b91c1c;
 }
 
+/* 修复结果确认区域样式 */
+.fix-confirmation {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background-color: #f3f4f6;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+.fix-confirmation span {
+    font-weight: 500;
+}
+
+.btn-correct {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    min-width: 60px;
+}
+
+.btn-correct:hover {
+    background-color: #059669;
+}
+
+.btn-wrong {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    min-width: 60px;
+}
+
+.btn-wrong:hover {
+    background-color: #dc2626;
+}
+
 @media (max-width: 640px) {
     .modal-content {
         width: 95%;
