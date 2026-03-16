@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 import os
 from pydantic import BaseModel
 from core.robot.graph import robot_invoke
-from core.agent.graph import meta_agent_invoke
+from core.agent.graph import dev_agent_invoke
 from core.crawl.graph import crawler_graph
 from core.crawl.state import CrawlState
 from core.common.db import init_db
@@ -43,6 +43,12 @@ class RobotConsultRequest(BaseModel):
     session_id: str = None
     classification:str=None
     reply_style: str = None
+
+class DevAgentRequest(BaseModel):
+    user_id: str
+    question: str
+    session_id: str = None
+    history: list = None
 
 class MetaAgentGenerateRequest(BaseModel):
     manager_id: str
@@ -104,6 +110,28 @@ def meta_agent_generate(req: MetaAgentGenerateRequest):
         }
     }
 
+# 开发代理接口
+@app.post("/api/dev-agent/consult", summary="开发代理咨询接口")
+def dev_agent_consult(req: DevAgentRequest):
+    result = dev_agent_invoke(
+        user_id=req.user_id,
+        question=req.question,
+        session_id=req.session_id,
+        history=req.history
+    )
+    
+    return {
+        "code": 200 if not result.get("error") else 500,
+        "msg": "success" if not result.get("error") else result.get("error", "未知错误"),
+        "data": {
+            "session_id": result["session_id"],
+            "reply": result["reply"],
+            "tool_call_result": result["tool_call_result"],
+            "thought_process": result["thought_process"],
+            "is_final_answer": result["is_final_answer"]
+        }
+    }
+
 # 爬虫接口
 @app.post("/api/crawler/crawl", summary="启动爬虫")
 def crawl_endpoint(req: CrawlRequest):
@@ -141,6 +169,17 @@ async def serve_admin_page():
         return HTMLResponse(content=html_content)
     else:
         return HTMLResponse(content="<h1>Admin page not found</h1>", status_code=404)
+
+# Robot development page route
+@app.get("/robot-dev", response_class=HTMLResponse, summary="访问客服机器人开发页面")
+async def serve_robot_dev_page():
+    robot_dev_path = os.path.join(os.path.dirname(__file__), "..", "ui", "robot-dev.html")
+    if os.path.exists(robot_dev_path):
+        with open(robot_dev_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+        return HTMLResponse(content=html_content)
+    else:
+        return HTMLResponse(content="<h1>Robot development page not found</h1>", status_code=404)
 
 # Serve static files (CSS, JS, images, etc.)
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "..", "ui")), name="static")

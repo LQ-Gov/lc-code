@@ -59,8 +59,8 @@ def create_special_flow(req: SpecialFlowRequest):
     """
     try:
         db_execute(
-            "INSERT INTO specific_question_flows (key, desc, flow, status) VALUES (?, ?, ?, ?, ?)",
-            (req.key, req.desc, req.flow, req.status)
+            "INSERT INTO specific_question_flows (key, desc, flow, status, prompt) VALUES (?, ?, ?, ?, ?)",
+            (req.key, req.desc, req.flow, req.status, None)
         )
         return {"code": 200, "msg": "特殊问题流程创建成功", "data": {}}
     except Exception as e:

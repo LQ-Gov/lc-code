@@ -1,64 +1,95 @@
 from langgraph.graph import StateGraph, START, END
-from core.agent.state import MetaAgentState
+from core.agent.state import DevAgentState
 from core.agent.nodes import (
-    parse_uploaded_docs, parse_demand, select_robot_template,
-    generate_robot_config, verify_robot, is_demand_understood_cond,
-    is_robot_generated_cond
+    think_about_question,
+    execute_tool_action,
+    observe_and_decide,
+    generate_final_answer
 )
-from core.common.utils import generate_id
 
-# 构建元智能体StateGraph
-def build_meta_agent_graph():
-    graph = StateGraph(MetaAgentState)
+def should_continue(state: DevAgentState) -> str:
+    """决定是否继续执行工具调用"""
+    if state["is_final_answer"]:
+        return "end"
+    else:
+        return "continue"
 
+def build_dev_agent_graph():
+    """构建开发代理的StateGraph"""
+    graph = StateGraph(DevAgentState)
+    
     # 添加节点
-    graph.add_node("parse_uploaded_docs", parse_uploaded_docs)
-    graph.add_node("parse_demand", parse_demand)
-    graph.add_node("select_template", select_robot_template)
-    graph.add_node("generate_robot_config", generate_robot_config)
-    graph.add_node("verify_robot", verify_robot)
-
-    # 定义节点流转
-    graph.add_edge(START, "parse_uploaded_docs")
-    graph.add_edge("parse_uploaded_docs", "parse_demand")
-    # 条件边：是否理解需求
-    graph.add_conditional_edges("parse_demand", is_demand_understood_cond, {
-        "select_template": "select_template",
-        "end": END
-    })
-    graph.add_edge("select_template", "generate_robot_config")
-    # 条件边：是否生成机器人成功
-    graph.add_conditional_edges("generate_robot_config", is_robot_generated_cond, {
-        "verify_robot": "verify_robot",
-        "end": END
-    })
-    graph.add_edge("verify_robot", END)
-
-    # 编译图
+    graph.add_node("think", think_about_question)
+    graph.add_node("act", execute_tool_action)
+    graph.add_node("observe", observe_and_decide)
+    graph.add_node("answer", generate_final_answer)
+    
+    # 定义工作流
+    graph.add_edge(START, "think")
+    graph.add_conditional_edges(
+        "think",
+        should_continue,
+        {
+            "continue": "act",
+            "end": "answer"
+        }
+    )
+    graph.add_edge("act", "observe")
+    graph.add_conditional_edges(
+        "observe",
+        should_continue,
+        {
+            "continue": "act",  # 可能需要多次工具调用
+            "end": "answer"
+        }
+    )
+    graph.add_edge("answer", END)
+    
     return graph.compile()
 
-# 初始化元智能体图
-meta_agent_graph = build_meta_agent_graph()
+# 初始化开发代理图
+dev_agent_graph = build_dev_agent_graph()
 
-# 元智能体调用入口
-def meta_agent_invoke(manager_id: str, user_query: str, uploaded_docs: list[str] = None):
-    # 初始化生成ID
-    gen_id = generate_id("gen")
-    # 初始化状态
+def dev_agent_invoke(user_id: str, question: str, session_id: str = None, history: list = None):
+    """开发代理调用入口"""
+    if session_id is None:
+        from core.common.utils import generate_id
+        session_id = generate_id("dev_session")
+    
+    if history is None:
+        history = []
+    
     initial_state = {
-        "manager_id": manager_id,
-        "gen_id": gen_id,
-        "user_query": user_query,
-        "uploaded_docs": uploaded_docs or [],
-        "doc_contents": [],
-        "demand_parse_result": "",
-        "robot_template": "",
-        "robot_config": {},
-        "is_demand_understood": False,
-        "is_robot_generated": False,
-        "verify_result": None,
-        "error": None
+        "session_id": session_id,
+        "user_id": user_id,
+        "question": question,
+        "history": history,
+        "tool_call_result": None,
+        "call_tool": None,
+        "reply": None,
+        "messages": [],
+        "current_step": "thought",
+        "available_tools": [],
+        "tool_results": [],
+        "thought_process": [],
+        "is_final_answer": False
     }
-    # 运行图
-    result = meta_agent_graph.invoke(initial_state)
-    return result
+    
+    try:
+        result = dev_agent_graph.invoke(initial_state)
+        return {
+            "session_id": result["session_id"],
+            "reply": result["reply"],
+            "tool_call_result": result["tool_call_result"],
+            "thought_process": result["thought_process"],
+            "is_final_answer": result["is_final_answer"]
+        }
+    except Exception as e:
+        return {
+            "session_id": session_id,
+            "reply": f"处理请求时发生错误: {str(e)}",
+            "tool_call_result": None,
+            "thought_process": [f"错误: {str(e)}"],
+            "is_final_answer": True,
+            "error": str(e)
+        }

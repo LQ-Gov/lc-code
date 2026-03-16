@@ -1,18 +1,18 @@
-from langgraph.graph import StateGraph, START, END
-from typing import List, Dict, Optional, Any,TypedDict
-from core.common.config import ROBOT_TEMPLATES
+from typing import TypedDict, List, Optional, Dict, Any, Annotated
+from operator import add
 
-# 元智能体核心状态
-class MetaAgentState(TypedDict):
-    manager_id: str               # 管理者ID
-    gen_id: str                   # 生成记录ID
-    user_query: str               # 管理者对话需求
-    uploaded_docs: List[str]      # 上传文档路径列表
-    doc_contents: List[str]       # 解析后的文档内容
-    demand_parse_result: str      # 需求解析结果
-    robot_template: str           # 选择的机器人模板
-    robot_config: Dict[str, Any]  # 生成的机器人配置
-    is_demand_understood: bool    # 是否理解需求
-    is_robot_generated: bool      # 是否生成机器人
-    verify_result: Optional[str]  # 生成验证结果
-    error: Optional[str]          # 生成错误
+class DevAgentState(TypedDict):
+    """Development agent state for ReAct pattern interaction"""
+    session_id: str
+    user_id: str
+    question: str
+    history: List[Dict[str, Any]]
+    tool_call_result: Optional[Dict[str, Any]]
+    call_tool: Optional[Dict[str, Any]]
+    reply: Optional[str]
+    messages: Annotated[list, add]
+    current_step: str  # "thought", "action", "observation", "final_answer"
+    available_tools: List[str]
+    tool_results: List[Dict[str, Any]]
+    thought_process: List[str]
+    is_final_answer: bool

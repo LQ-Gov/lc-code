@@ -18,9 +18,7 @@ class ErrorFeedbackRequest(BaseModel):
 
 
 class UpdateErrorFeedbackRequest(BaseModel):
-    auto_fix_result: Optional[str] = None
     status: str
-    feedback_error_detail: Optional[str] = None
 
 
 # 错误反馈响应模型
@@ -101,38 +99,13 @@ def update_error_feedback(feedback_id: str, req: UpdateErrorFeedbackRequest):
     try:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        if req.feedback_error_detail and req.auto_fix_result:
-            # 更新错误描述和自动修复结果
-            db_execute(
-                """UPDATE error_feedback 
-                   SET auto_fix_result = ?, status = ?, feedback_error_detail = ?, update_time = ? 
-                   WHERE feedback_id = ?""",
-                (req.auto_fix_result, req.status, req.feedback_error_detail, current_time, feedback_id)
-            )
-        elif req.feedback_error_detail:
-            # 只更新错误描述
-            db_execute(
-                """UPDATE error_feedback 
-                   SET status = ?, feedback_error_detail = ?, update_time = ? 
-                   WHERE feedback_id = ?""",
-                (req.status, req.feedback_error_detail, current_time, feedback_id)
-            )
-        elif req.auto_fix_result:
-            # 只更新自动修复结果
-            db_execute(
-                """UPDATE error_feedback 
-                   SET auto_fix_result = ?, status = ?, update_time = ? 
-                   WHERE feedback_id = ?""",
-                (req.auto_fix_result, req.status, current_time, feedback_id)
-            )
-        else:
-            # 只更新状态
-            db_execute(
-                """UPDATE error_feedback 
-                   SET status = ?, update_time = ? 
-                   WHERE feedback_id = ?""",
-                (req.status, current_time, feedback_id)
-            )
+        # 只更新状态
+        db_execute(
+            """UPDATE error_feedback 
+               SET status = ?, update_time = ? 
+               WHERE feedback_id = ?""",
+            (req.status, current_time, feedback_id)
+        )
         
         return {"code": 200, "msg": "错误反馈更新成功", "data": {}}
     except Exception as e:

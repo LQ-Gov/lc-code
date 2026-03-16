@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN" x-data="robotDevApp()">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客服机器人开发 - 预览模式</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* 开发页面特有样式 */
+        .dev-container {
+            display: flex;
+            height: 95vh;
+            margin: 20px auto;
+            max-width: 1600px;
+            gap: 20px;
+        }
+        
+        .dev-panel {
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        /* 左侧客服机器人设计面板 - 进一步缩小占比并设置最大宽度 */
+        .design-panel {
+            flex: 0 0 25%; /* 固定左侧为25%宽度 */
+            max-width: 450px; /* 设置最大宽度，符合视觉舒适度 */
+            height: 100%;
+        }
+        
+        /* 右侧机器人预览 - 占据剩余空间 */
+        .preview-panel {
+            flex: 1; /* 右侧占据剩余75%宽度 */
+            height: 100%;
+        }
+        
+        .panel-header {
+            background-color: #4a6cf7;
+            color: white;
+            padding: 16px 20px;
+            font-size: 1.0rem;
+            font-weight: 600;
+        }
+        
+        .design-panel .panel-header {
+            background-color: #667eea;
+        }
+        
+        .preview-panel .panel-header {
+            background-color: #4a6cf7;
+        }
+        
+        /* 中部工具条样式 */
+        .middle-toolbar {
+            display: flex;
+            justify-content: flex-start; /* 改为靠左排列 */
+            gap: 8px;
+            padding: 12px 16px;
+            background-color: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+            align-items: center;
+        }
+        
+        .toolbar-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #374151;
+            transition: all 0.2s;
+        }
+        
+        .toolbar-item:hover {
+            border-color: #4a6cf7;
+            background-color: #f0f5ff;
+        }
+        
+        .toolbar-icon {
+            font-size: 14px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: #f9fafb;
+        }
+        
+        .chat-input-container {
+            padding: 16px 20px;
+            background-color: white;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-wrapper textarea {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            resize: none;
+            font-size: 14px;
+            line-height: 1.4;
+            min-height: 44px;
+            max-height: 120px;
+        }
+        
+        .input-wrapper textarea:focus {
+            outline: none;
+            border-color: #4a6cf7;
+            box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+        }
+        
+        .send-button {
+            background-color: #4a6cf7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        
+        .send-button:hover:not(:disabled) {
+            background-color: #3a5ce5;
+        }
+        
+        .send-button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            max-width: 90%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+        
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .bot-message {
+            align-self: flex-start;
+            background-color: #e5e7eb;
+            color: #374151;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-time {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 5px;
+            text-align: right;
+        }
+        
+        .loading-message {
+            align-self: flex-start;
+        }
+        
+        .loading-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background-color: #6b7280;
+            border-radius: 50%;
+            animation: loading-pulse 1.4s infinite ease-in-out;
+        }
+        
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes loading-pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.6; }
+            50% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* 文件上传弹窗样式 */
+        .upload-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .upload-modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area:hover {
+            border-color: #4a6cf7;
+        }
+        
+        .upload-icon {
+            font-size: 32px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+        
+        .upload-text {
+            color: #6b7280;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .upload-hint {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+        
+        .uploaded-files-list {
+            margin-top: 16px;
+        }
+        
+        .uploaded-file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f3f4f6;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .remove-file-btn {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 2px;
+        }
+        
+        .remove-file-btn:hover {
+            color: #dc2626;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        
+        .modal-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-cancel {
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+        
+        .btn-confirm {
+            background-color: #4a6cf7;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background-color: #e5e7eb;
+        }
+        
+        .btn-confirm:hover {
+            background-color: #3a5ce5;
+        }
+        
+        /* iframe 样式 - 确保完整填充容器 */
+        .iframe-container {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #f9fafb;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .dev-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .design-panel {
+                flex: 0 0 auto;
+                height: auto;
+                max-width: none;
+            }
+            
+            .preview-panel {
+                flex: 0 0 auto;
+                height: auto;
+            }
+            
+            .middle-toolbar {
+                justify-content: center;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="dev-container">
+        <!-- 左侧：客服机器人设计 -->
+        <div class="dev-panel design-panel">
+            <div class="panel-header">
+                客服机器人设计
+            </div>
+            <div class="chat-messages" id="userChatMessages">
+                <template x-for="message in userMessages" :key="message.id">
+                    <div :class="`message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`">
+                        <div x-html="renderMarkdown(message.text)"></div>
+                        <div class="message-time" x-text="message.time"></div>
+                    </div>
+                </template>
+                
+                <!-- 用户端加载指示器 -->
+                <div x-show="userLoading" class="message bot-message loading-message">
+                    <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <div class="message-time" x-text="getCurrentTime()"></div>
+                </div>
+            </div>
+            <!-- 中部工具条 -->
+            <div class="middle-toolbar">
+                <div class="toolbar-item" @click="showUploadModal = true">
+                    <span class="toolbar-icon">📁</span>
+                    <span>上传</span>
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        x-model="userInputMessage"
+                        @input="autoResize($event.target)"
+                        @keydown.enter="handleUserEnterKey($event)"
+                        placeholder="在此输入您的问题..."
+                        rows="1"
+                        maxlength="500"
+                    ></textarea>
+                    <button @click="sendUserMessage" :disabled="!userInputMessage.trim() || userLoading">
+                        发送
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧：客服机器人预览（使用iframe嵌入） -->
+        <div class="dev-panel preview-panel">
+            <div class="panel-header">
+                客服机器人预览
+            </div>
+            <div style="flex: 1; width: 100%;">
+                <iframe src="/?dev_mode=true" class="iframe-container" title="客服机器人预览"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文件上传弹窗 -->
+    <div x-show="showUploadModal" class="upload-modal" @click.outside="showUploadModal = false">
+        <div class="upload-modal-content">
+            <h3>上传文件</h3>
+            <div 
+                class="upload-area"
+                x-on:dragover.prevent="isDragging = true"
+                x-on:dragleave.prevent="isDragging = false"
+                x-on:drop.prevent="handleFileDrop($event)"
+                x-on:click="$refs.fileInput.click()"
+                :class="{ 'drag-over': isDragging }"
+            >
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">点击上传文件或拖拽文件到此处</div>
+                <div class="upload-hint">支持 PDF、DOCX、TXT 等格式</div>
+                <input type="file" x-ref="fileInput" x-on:change="handleFileSelect($event)" multiple style="display: none;">
+            </div>
+            <div class="uploaded-files-list" x-show="uploadedFiles.length > 0">
+                <h4>已选择的文件：</h4>
+                <template x-for="(file, index) in uploadedFiles" :key="index">
+                    <div class="uploaded-file-item">
+                        <span x-text="file.name"></span>
+                        <button class="remove-file-btn" @click="removeFile(index)">×</button>
+                    </div>
+                </template>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn btn-cancel" @click="showUploadModal = false">取消</button>
+                <button class="modal-btn btn-confirm" @click="confirmUpload">确认上传</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function robotDevApp() {
+            return {
+                // 用户对话框状态
+                userMessages: [
+                    { id: 1, sender: 'bot', text: '您好！我是客服机器人开发助手，请问有什么可以帮您的吗？', time: '10:00' }
+                ],
+                userInputMessage: '',
+                userLoading: false,
+                currentSessionId: null,
+                
+                // 文件上传状态
+                uploadedFiles: [],
+                isDragging: false,
+                showUploadModal: false,
+                
+                // 公共方法
+                getCurrentTime() {
+                    const now = new Date();
+                    return now.getHours().toString().padStart(2, '0') + ':' + 
+                           now.getMinutes().toString().padStart(2, '0');
+                },
+                
+                renderMarkdown(text) {
+                    return marked.parse(text);
+                },
+                
+                autoResize(element) {
+                    element.style.height = 'auto';
+                    element.style.height = Math.min(element.scrollHeight, 120) + 'px';
+                },
+                
+                // 用户对话框方法
+                handleUserEnterKey(event) {
+                    if (!event.shiftKey) {
+                        event.preventDefault();
+                        this.sendUserMessage();
+                    }
+                },
+                
+                sendUserMessage() {
+                    if (!this.userInputMessage.trim() || this.userLoading) return;
+                    
+                    const userMessage = {
+                        id: Date.now(),
+                        sender: 'user',
+                        text: this.userInputMessage.trim(),
+                        time: this.getCurrentTime()
+                    };
+                    
+                    this.userMessages.push(userMessage);
+                    const userQuestion = this.userInputMessage.trim();
+                    this.userInputMessage = '';
+                    
+                    // 调用开发代理API
+                    this.userLoading = true;
+                    fetch('/api/dev-agent/consult', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_id: 'dev_user',
+                            question: userQuestion,
+                            session_id: this.currentSessionId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.code === 200) {
+                            const botMessage = {
+                                id: Date.now() + 1,
+                                sender: 'bot',
+                                text: data.data.reply,
+                                time: this.getCurrentTime()
+                            };
+                            this.userMessages.push(botMessage);
+                            
+                            // 处理工具调用结果
+                            if (data.data.tool_call_result) {
+                                this.handleToolCallResult(data.data.tool_call_result);
+                            }
+                            
+                            // 更新会话ID
+                            this.currentSessionId = data.data.session_id;
+                        } else {
+                            const errorMessage = {
+                                id: Date.now() + 1,
+                                sender: 'bot',
+                                text: `错误: ${data.msg}`,
+                                time: this.getCurrentTime()
+                            };
+                            this.userMessages.push(errorMessage);
+                        }
+                        this.userLoading = false;
+                    })
+                    .catch(error => {
+                        console.error('API调用失败:', error);
+                        const errorMessage = {
+                            id: Date.now() + 1,
+                            sender: 'bot',
+                            text: '网络错误，请稍后重试',
+                            time: this.getCurrentTime()
+                        };
+                        this.userMessages.push(errorMessage);
+                        this.userLoading = false;
+                    });
+                },
+                
+                // 处理工具调用结果
+                handleToolCallResult(toolResult) {
+                    if (toolResult.tool_type === 'frontend') {
+                        // 执行前端工具
+                        switch (toolResult.tool_name) {
+                            case 'navigate_to_page':
+                                if (toolResult.parameters.page_url) {
+                                    window.open(toolResult.parameters.page_url, '_blank');
+                                }
+                                break;
+                            case 'refresh_robot':
+                                // 刷新右侧iframe
+                                const iframe = document.querySelector('.iframe-container');
+                                if (iframe) {
+                                    iframe.contentWindow.location.reload();
+                                }
+                                break;
+                            case 'show_notification':
+                                // 显示通知（这里简单使用alert，实际项目中应该使用更友好的通知组件）
+                                alert(toolResult.parameters.message || '操作完成');
+                                break;
+                        }
+                    }
+                    // 后端工具的结果已经在回复中显示，无需额外处理
+                },
+                
+                // 文件上传方法
+                handleFileSelect(event) {
+                    const files = Array.from(event.target.files);
+                    this.uploadedFiles = [...this.uploadedFiles, ...files];
+                    // 重置input以允许重复选择相同文件
+                    event.target.value = '';
+                },
+                
+                handleFileDrop(event) {
+                    const files = Array.from(event.dataTransfer.files);
+                    this.uploadedFiles = [...this.uploadedFiles, ...files];
+                    this.isDragging = false;
+                },
+                
+                removeFile(index) {
+                    this.uploadedFiles.splice(index, 1);
+                },
+                
+                confirmUpload() {
+                    if (this.uploadedFiles.length > 0) {
+                        // 这里可以添加实际的文件上传逻辑
+                        // 目前只是关闭弹窗
+                        console.log('上传文件:', this.uploadedFiles);
+                        this.showUploadModal = false;
+                        this.uploadedFiles = [];
+                    } else {
+                        this.showUploadModal = false;
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+</html>

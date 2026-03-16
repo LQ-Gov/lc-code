@@ -1,88 +1,184 @@
-from core.agent.state import MetaAgentState
-from core.common.utils import parse_document, generate_id, format_time
-from core.common.config import ROBOT_TEMPLATES, SUPPORTED_DOC_FORMATS
-from core.common.db import db_execute
-from core.robot.graph import build_robot_graph
+from core.agent.state import DevAgentState
+from core.common.utils import generate_id
+from typing import Dict, Any, List, Optional
+import json
 
-# 节点1：解析上传文档
-def parse_uploaded_docs(state: MetaAgentState) -> MetaAgentState:
-    uploaded_docs = state["uploaded_docs"]
-    doc_contents = []
-    for doc in uploaded_docs:
-        # 校验文档格式
-        if doc.split(".")[-1] not in SUPPORTED_DOC_FORMATS:
-            return {**state, "error": f"不支持的文档格式：{doc}，仅支持{SUPPORTED_DOC_FORMATS}"}
-        # 解析文档
-        content = parse_document(doc)
-        doc_contents.append(content)
-    return {**state, "doc_contents": doc_contents, "error": None}
-
-# 节点2：解析管理者需求
-def parse_demand(state: MetaAgentState) -> MetaAgentState:
-    user_query = state["user_query"]
-    doc_contents = state["doc_contents"]
-    # 需求解析（简化，实际需大模型增强）
-    parse_result = f"已解析您的需求：{user_query}，结合{len(doc_contents)}份上传文档，核心需求为搭建客服AI机器人，包含基础咨询解答、特定问题处理功能"
-    # 判断是否理解需求
-    is_understood = True if "搭建机器人" in user_query or "生成机器人" in user_query else False
-    if not is_understood:
-        parse_result = f"暂未理解您的需求：{user_query}，请补充描述客服机器人的搭建要求（如功能、行业、问题类型）"
-    return {**state, "demand_parse_result": parse_result, "is_demand_understood": is_understood, "error": None}
-
-# 节点3：选择机器人模板
-def select_robot_template(state: MetaAgentState) -> MetaAgentState:
-    user_query = state["user_query"]
-    # 模板匹配（简化，实际需大模型根据需求匹配）
-    if "金融" in user_query or "银行卡" in user_query:
-        template = ROBOT_TEMPLATES[0] # 金融类
-    elif "电商" in user_query or "订单" in user_query:
-        template = ROBOT_TEMPLATES[1] # 电商类
-    else:
-        template = ROBOT_TEMPLATES[2] # 服务类
-    return {**state, "robot_template": template, "error": None}
-
-# 节点4：自动生成机器人配置
-def generate_robot_config(state: MetaAgentState) -> MetaAgentState:
-    template = state["robot_template"]
-    doc_contents = state["doc_contents"]
-    # 生成机器人核心配置（基于模板+文档内容）
-    robot_config = {
-        "gen_id": state["gen_id"],
-        "template": template,
-        "knowledge_base_url": DEFAULT_KNOWLEDGE_BASE_URL,
-        "supported_functions": ["知识库匹配", "特定问题处理", "错误反馈修复"],
-        "specific_questions": ["银行卡申请进度", "银行卡交易失败"] if template == "金融类" else ["订单查询", "物流跟踪"],
-        "reply_styles": ["正式", "亲切", "简洁"],
-        "auto_fix": True,
-        "doc_basis": [f"文档{i+1}：{content[:50]}..." for i, content in enumerate(doc_contents)]
+# 前端工具定义
+FRONTEND_TOOLS = {
+    "navigate_to_page": {
+        "description": "跳转到指定页面",
+        "parameters": {"page_url": "目标页面URL", "page_name": "页面名称"}
+    },
+    "refresh_robot": {
+        "description": "刷新客服机器人界面",
+        "parameters": {}
+    },
+    "show_notification": {
+        "description": "显示通知消息",
+        "parameters": {"message": "通知内容", "type": "通知类型 (info/success/warning/error)"}
     }
-    # 基于配置构建机器人LangGraph（核心）
-    robot_graph = build_robot_graph()
-    # 保存机器人配置到数据库
-    db_execute(
-        "INSERT INTO agent_generations (gen_id, manager_id, create_time, robot_template, robot_config, robot_status) VALUES (?, ?, ?, ?, ?, ?)",
-        (state["gen_id"], state["manager_id"], format_time(), template, str(robot_config), "已生成")
-    )
-    return {**state, "robot_config": robot_config, "is_robot_generated": True, "error": None}
+}
 
-# 节点5：生成机器人验证
-def verify_robot(state: MetaAgentState) -> MetaAgentState:
-    robot_config = state["robot_config"]
-    # 简单验证：配置完整性
-    if all(key in robot_config for key in ["template", "supported_functions", "specific_questions"]):
-        verify_result = f"机器人验证通过！基于{robot_config['template']}模板生成，支持{len(robot_config['supported_functions'])}项核心功能，可正常使用"
+# 后端工具定义
+BACKEND_TOOLS = {
+    "add_knowledge_base": {
+        "description": "向知识库添加新条目",
+        "parameters": {"question": "问题", "answer": "答案", "category": "分类"}
+    },
+    "delete_knowledge_base": {
+        "description": "从知识库删除条目",
+        "parameters": {"kb_id": "知识库条目ID"}
+    },
+    "update_knowledge_base": {
+        "description": "更新知识库条目",
+        "parameters": {"kb_id": "知识库条目ID", "question": "新问题", "answer": "新答案", "category": "新分类"}
+    },
+    "add_special_flow": {
+        "description": "添加特定流程",
+        "parameters": {"flow_name": "流程名称", "steps": "流程步骤列表", "trigger_words": "触发关键词"}
+    },
+    "delete_special_flow": {
+        "description": "删除特定流程",
+        "parameters": {"flow_id": "流程ID"}
+    },
+    "update_special_flow": {
+        "description": "更新特定流程",
+        "parameters": {"flow_id": "流程ID", "flow_name": "新流程名称", "steps": "新流程步骤", "trigger_words": "新触发关键词"}
+    }
+}
+
+def get_all_available_tools() -> List[str]:
+    """获取所有可用工具列表"""
+    return list(FRONTEND_TOOLS.keys()) + list(BACKEND_TOOLS.keys())
+
+def think_about_question(state: DevAgentState) -> DevAgentState:
+    """思考阶段：分析用户问题并决定是否需要调用工具"""
+    question = state["question"]
+    history = state["history"]
+    
+    # 简化的思考逻辑 - 实际应该使用大模型
+    thought = f"用户询问: '{question}'. 需要分析是否需要调用工具来处理此请求。"
+    
+    # 判断是否需要工具调用
+    needs_tool = any(tool in question.lower() for tool in get_all_available_tools())
+    
+    if needs_tool:
+        # 识别可能需要的工具
+        possible_tools = []
+        for tool in get_all_available_tools():
+            if tool.replace('_', ' ') in question.lower() or tool in question.lower():
+                possible_tools.append(tool)
+        
+        if possible_tools:
+            next_step = "action"
+            call_tool = {"tool_name": possible_tools[0], "parameters": {}}
+        else:
+            next_step = "final_answer"
+            call_tool = None
     else:
-        verify_result = f"机器人验证失败！配置缺失，缺少核心功能定义，请重新生成"
-        db_execute(
-            "UPDATE agent_generations SET robot_status = ? WHERE gen_id = ?",
-            ("验证失败", state["gen_id"])
-        )
-    return {**state, "verify_result": verify_result, "error": None}
+        next_step = "final_answer"
+        call_tool = None
+    
+    return {
+        **state,
+        "current_step": next_step,
+        "call_tool": call_tool,
+        "thought_process": [thought],
+        "is_final_answer": next_step == "final_answer"
+    }
 
-# 条件判断：是否理解需求
-def is_demand_understood_cond(state: MetaAgentState) -> str:
-    return "select_template" if state["is_demand_understood"] else "end"
+def execute_tool_action(state: DevAgentState) -> DevAgentState:
+    """执行工具调用"""
+    call_tool = state["call_tool"]
+    if not call_tool:
+        return {**state, "current_step": "observation", "tool_call_result": None}
+    
+    tool_name = call_tool["tool_name"]
+    parameters = call_tool.get("parameters", {})
+    
+    # 模拟工具执行结果
+    if tool_name in FRONTEND_TOOLS:
+        result = {
+            "tool_type": "frontend",
+            "tool_name": tool_name,
+            "status": "success",
+            "message": f"前端工具 '{tool_name}' 已准备执行",
+            "parameters": parameters
+        }
+    elif tool_name in BACKEND_TOOLS:
+        result = {
+            "tool_type": "backend",
+            "tool_name": tool_name,
+            "status": "success",
+            "message": f"后端工具 '{tool_name}' 已执行",
+            "parameters": parameters
+        }
+    else:
+        result = {
+            "tool_type": "unknown",
+            "tool_name": tool_name,
+            "status": "error",
+            "message": f"未知工具: {tool_name}",
+            "parameters": parameters
+        }
+    
+    tool_results = state.get("tool_results", []) + [result]
+    
+    return {
+        **state,
+        "current_step": "observation",
+        "tool_call_result": result,
+        "tool_results": tool_results
+    }
 
-# 条件判断：是否生成机器人成功
-def is_robot_generated_cond(state: MetaAgentState) -> str:
-    return "verify_robot" if state["is_robot_generated"] else "end"
+def observe_and_decide(state: DevAgentState) -> DevAgentState:
+    """观察工具执行结果并决定下一步"""
+    tool_result = state["tool_call_result"]
+    thought_process = state["thought_process"]
+    
+    if tool_result:
+        observation = f"工具执行结果: {tool_result['message']}"
+        thought_process.append(observation)
+        
+        # 如果工具执行成功且是最终操作，则生成最终答案
+        if tool_result["status"] == "success":
+            final_answer = f"已成功执行操作: {tool_result['message']}"
+            return {
+                **state,
+                "current_step": "final_answer",
+                "reply": final_answer,
+                "thought_process": thought_process,
+                "is_final_answer": True
+            }
+        else:
+            # 工具执行失败，提供错误信息
+            error_answer = f"操作失败: {tool_result['message']}"
+            return {
+                **state,
+                "current_step": "final_answer",
+                "reply": error_answer,
+                "thought_process": thought_process,
+                "is_final_answer": True
+            }
+    else:
+        # 没有工具调用，直接生成回答
+        simple_answer = f"您的问题是: '{state['question']}'. 这是一个常规问题，不需要特殊工具处理。"
+        return {
+            **state,
+            "current_step": "final_answer",
+            "reply": simple_answer,
+            "thought_process": thought_process,
+            "is_final_answer": True
+        }
+
+def generate_final_answer(state: DevAgentState) -> DevAgentState:
+    """生成最终答案"""
+    if state["is_final_answer"] and state["reply"]:
+        return state
+    
+    # 如果还没有最终答案，生成一个
+    if not state["reply"]:
+        reply = "已完成处理您的请求。"
+        return {**state, "reply": reply, "is_final_answer": True}
+    
+    return state
