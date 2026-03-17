@@ -1,4 +1,4 @@
-from core.common.db import db_query
+from core.common.db import db_query, db_execute
 
 
 class SpecificQuestionService:
@@ -69,3 +69,91 @@ class SpecificQuestionService:
         except Exception as e:
             print(f"Error querying specific question flow for key '{key}': {e}")
             return None
+    
+    @staticmethod
+    def create_special_question_flow(key: str, desc: str, flow: str, status: str = "active") -> bool:
+        """
+        创建特殊问题流程
+        
+        Args:
+            key (str): 流程唯一标识
+            desc (str): 流程描述
+            flow (str): 流程定义
+            status (str): 状态，默认为"active"
+            
+        Returns:
+            bool: 创建是否成功
+        """
+        try:
+            db_execute(
+                "INSERT INTO specific_question_flows (key, desc, flow, status, prompt) VALUES (?, ?, ?, ?, ?)",
+                (key, desc, flow, status, None)
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"创建特殊问题流程失败: {str(e)}")
+    
+    @staticmethod
+    def update_special_question_flow(key: str, desc: str, flow: str, status: str = "active") -> bool:
+        """
+        更新特殊问题流程
+        
+        Args:
+            key (str): 流程唯一标识
+            desc (str): 流程描述
+            flow (str): 流程定义
+            status (str): 状态
+            
+        Returns:
+            bool: 更新是否成功
+        """
+        try:
+            db_execute(
+                "UPDATE specific_question_flows SET desc = ?, flow = ?, status = ? WHERE key = ?",
+                (desc, flow, status, key)
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"更新特殊问题流程失败: {str(e)}")
+    
+    @staticmethod
+    def delete_special_question_flow(key: str) -> bool:
+        """
+        删除特殊问题流程
+        
+        Args:
+            key (str): 流程唯一标识
+            
+        Returns:
+            bool: 删除是否成功
+        """
+        try:
+            db_execute("DELETE FROM specific_question_flows WHERE key = ?", (key,))
+            return True
+        except Exception as e:
+            raise Exception(f"删除特殊问题流程失败: {str(e)}")
+    
+    @staticmethod
+    def get_all_special_question_flows():
+        """
+        获取所有特殊问题流程（包括禁用的）
+        
+        Returns:
+            list: 所有特殊问题流程的列表
+        """
+        try:
+            sql = "SELECT key, desc, flow, status, prompt FROM specific_question_flows"
+            results = db_query(sql)
+            flows = []
+            for result in results:
+                flow = {
+                    "key": result[0],
+                    "desc": result[1],
+                    "flow": result[2],
+                    "status": result[3],
+                    "prompt": result[4] or ""
+                }
+                flows.append(flow)
+            return flows
+        except Exception as e:
+            raise Exception(f"获取所有特殊问题流程失败: {str(e)}")

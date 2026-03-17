@@ -16,3 +16,4 @@ class DevAgentState(TypedDict):
     tool_results: List[Dict[str, Any]]
     thought_process: List[str]
     is_final_answer: bool
+    uploaded_files: List[str]

@@ -433,8 +433,8 @@
             >
                 <div class="upload-icon">📁</div>
                 <div class="upload-text">点击上传文件或拖拽文件到此处</div>
-                <div class="upload-hint">支持 PDF、DOCX、TXT 等格式</div>
-                <input type="file" x-ref="fileInput" x-on:change="handleFileSelect($event)" multiple style="display: none;">
+                <div class="upload-hint">支持 PDF 格式</div>
+                <input type="file" x-ref="fileInput" x-on:change="handleFileSelect($event)" accept=".pdf" style="display: none;">
             </div>
             <div class="uploaded-files-list" x-show="uploadedFiles.length > 0">
                 <h4>已选择的文件：</h4>
@@ -447,7 +447,7 @@
             </div>
             <div class="modal-actions">
                 <button class="modal-btn btn-cancel" @click="showUploadModal = false">取消</button>
-                <button class="modal-btn btn-confirm" @click="confirmUpload">确认上传</button>
+                <button class="modal-btn btn-confirm" @click="confirmUpload" :disabled="uploadedFiles.length === 0">确认上传</button>
             </div>
         </div>
     </div>
@@ -590,14 +590,24 @@
                 // 文件上传方法
                 handleFileSelect(event) {
                     const files = Array.from(event.target.files);
-                    this.uploadedFiles = [...this.uploadedFiles, ...files];
+                    // 只保留PDF文件
+                    const pdfFiles = files.filter(file => file.name.toLowerCase().endsWith('.pdf'));
+                    if (pdfFiles.length !== files.length) {
+                        alert('只支持PDF文件上传');
+                    }
+                    this.uploadedFiles = [...this.uploadedFiles, ...pdfFiles];
                     // 重置input以允许重复选择相同文件
                     event.target.value = '';
                 },
                 
                 handleFileDrop(event) {
                     const files = Array.from(event.dataTransfer.files);
-                    this.uploadedFiles = [...this.uploadedFiles, ...files];
+                    // 只保留PDF文件
+                    const pdfFiles = files.filter(file => file.name.toLowerCase().endsWith('.pdf'));
+                    if (pdfFiles.length !== files.length) {
+                        alert('只支持PDF文件上传');
+                    }
+                    this.uploadedFiles = [...this.uploadedFiles, ...pdfFiles];
                     this.isDragging = false;
                 },
                 
@@ -607,11 +617,94 @@
                 
                 confirmUpload() {
                     if (this.uploadedFiles.length > 0) {
-                        // 这里可以添加实际的文件上传逻辑
-                        // 目前只是关闭弹窗
-                        console.log('上传文件:', this.uploadedFiles);
+                        const file = this.uploadedFiles[0]; // 只处理第一个文件
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        
+                        this.userLoading = true;
                         this.showUploadModal = false;
-                        this.uploadedFiles = [];
+                        
+                        // 上传文件
+                        fetch('/api/dev-agent/upload-file', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.code === 200) {
+                                const filename = data.data.filename;
+                                
+                                // 添加"文件已上传"消息
+                                const uploadSuccessMessage = {
+                                    id: Date.now(),
+                                    sender: 'bot',
+                                    text: '文件已上传',
+                                    time: this.getCurrentTime()
+                                };
+                                this.userMessages.push(uploadSuccessMessage);
+                                
+                                // 发送二次请求到dev-agent/consult接口
+                                const requestBody = {
+                                    user_id: 'dev_user',
+                                    question: '文件已上传，请处理',
+                                    action: 'upload_file',
+                                    filename: filename
+                                };
+                                
+                                // 只在session_id是非空字符串时才包含该字段
+                                if (this.currentSessionId && typeof this.currentSessionId === 'string' && this.currentSessionId.trim()) {
+                                    requestBody.session_id = this.currentSessionId;
+                                }
+                                
+                                return fetch('/api/dev-agent/consult', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(requestBody)
+                                });
+                            } else {
+                                throw new Error(data.msg);
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.code === 200) {
+                                // 添加"请输入你的具体需求"消息
+                                const promptMessage = {
+                                    id: Date.now() + 1,
+                                    sender: 'bot',
+                                    text: '请输入你的具体需求',
+                                    time: this.getCurrentTime()
+                                };
+                                this.userMessages.push(promptMessage);
+                                
+                                // 更新会话ID
+                                this.currentSessionId = data.data.session_id;
+                            } else {
+                                const errorMessage = {
+                                    id: Date.now() + 1,
+                                    sender: 'bot',
+                                    text: `错误: ${data.msg}`,
+                                    time: this.getCurrentTime()
+                                };
+                                this.userMessages.push(errorMessage);
+                            }
+                            this.userLoading = false;
+                            this.uploadedFiles = [];
+                        })
+                        .catch(error => {
+                            console.error('文件上传失败:', error);
+                            const errorMessage = {
+                                id: Date.now() + 1,
+                                sender: 'bot',
+                                text: '文件上传失败，请稍后重试',
+                                time: this.getCurrentTime()
+                            };
+                            this.userMessages.push(errorMessage);
+                            this.userLoading = false;
+                            this.uploadedFiles = [];
+                        });
                     } else {
                         this.showUploadModal = false;
                     }

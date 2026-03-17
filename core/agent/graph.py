@@ -1,5 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from core.agent.state import DevAgentState
+from langgraph.prebuilt import ToolNode
 from core.agent.nodes import (
     think_about_question,
     execute_tool_action,
@@ -9,10 +10,11 @@ from core.agent.nodes import (
 
 def should_continue(state: DevAgentState) -> str:
     """决定是否继续执行工具调用"""
-    if state["is_final_answer"]:
-        return "end"
-    else:
+    last_message = state["messages"][-1]
+    if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
         return "continue"
+    else:
+        return "end"
 
 def build_dev_agent_graph():
     """构建开发代理的StateGraph"""
@@ -20,7 +22,7 @@ def build_dev_agent_graph():
     
     # 添加节点
     graph.add_node("think", think_about_question)
-    graph.add_node("act", execute_tool_action)
+    graph.add_node("act", ToolNode())
     graph.add_node("observe", observe_and_decide)
     graph.add_node("answer", generate_final_answer)
     
@@ -50,7 +52,7 @@ def build_dev_agent_graph():
 # 初始化开发代理图
 dev_agent_graph = build_dev_agent_graph()
 
-def dev_agent_invoke(user_id: str, question: str, session_id: str = None, history: list = None):
+def dev_agent_invoke(user_id: str, question: str, session_id: str = None, history: list = None, uploaded_files: list = None):
     """开发代理调用入口"""
     if session_id is None:
         from core.common.utils import generate_id
@@ -58,6 +60,9 @@ def dev_agent_invoke(user_id: str, question: str, session_id: str = None, histor
     
     if history is None:
         history = []
+    
+    if uploaded_files is None:
+        uploaded_files = []
     
     initial_state = {
         "session_id": session_id,
@@ -72,7 +77,8 @@ def dev_agent_invoke(user_id: str, question: str, session_id: str = None, histor
         "available_tools": [],
         "tool_results": [],
         "thought_process": [],
-        "is_final_answer": False
+        "is_final_answer": False,
+        "uploaded_files": uploaded_files
     }
     
     try:

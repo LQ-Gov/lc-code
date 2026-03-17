@@ -2,6 +2,8 @@ from core.agent.state import DevAgentState
 from core.common.utils import generate_id
 from typing import Dict, Any, List, Optional
 import json
+from core.common.qwen_utils import get_qwen_model
+from langchain_core.messages import AIMessage,SystemMessage
 
 # 前端工具定义
 FRONTEND_TOOLS = {
@@ -53,39 +55,30 @@ def get_all_available_tools() -> List[str]:
 
 def think_about_question(state: DevAgentState) -> DevAgentState:
     """思考阶段：分析用户问题并决定是否需要调用工具"""
-    question = state["question"]
-    history = state["history"]
+    messages = state['messages']
+    question = state["messages"][-1].content
     
-    # 简化的思考逻辑 - 实际应该使用大模型
-    thought = f"用户询问: '{question}'. 需要分析是否需要调用工具来处理此请求。"
+    # 调用大模型判断是否需要工具调用
+    model = get_qwen_model()
+
+    model = model.bind_tools([])
+
     
-    # 判断是否需要工具调用
-    needs_tool = any(tool in question.lower() for tool in get_all_available_tools())
+    prompt = f"""你是一个智能开发助手，需要根据用户的问题来协助用户修改客服机器人。
+    前端展示的当前页面为: {state['current_preview_url']}
     
-    if needs_tool:
-        # 识别可能需要的工具
-        possible_tools = []
-        for tool in get_all_available_tools():
-            if tool.replace('_', ' ') in question.lower() or tool in question.lower():
-                possible_tools.append(tool)
+    你需要:
+    1.根据问题判断是否需要调用页面跳转/页面刷新工具
+    2.判断是否需要读取文件，用户的问题有部分内容可能依赖之前上传的文件
+    3.判断是是否调用其他工具来执行操作
+    4.如果用户的当前不支持执行，请输出"当前不支持该操作"
+    """
+    
+    
+    response = model.invoke([*messages, SystemMessage(content=prompt)])
+
+    return {"messages":[response]}
         
-        if possible_tools:
-            next_step = "action"
-            call_tool = {"tool_name": possible_tools[0], "parameters": {}}
-        else:
-            next_step = "final_answer"
-            call_tool = None
-    else:
-        next_step = "final_answer"
-        call_tool = None
-    
-    return {
-        **state,
-        "current_step": next_step,
-        "call_tool": call_tool,
-        "thought_process": [thought],
-        "is_final_answer": next_step == "final_answer"
-    }
 
 def execute_tool_action(state: DevAgentState) -> DevAgentState:
     """执行工具调用"""
@@ -100,85 +93,78 @@ def execute_tool_action(state: DevAgentState) -> DevAgentState:
     if tool_name in FRONTEND_TOOLS:
         result = {
             "tool_type": "frontend",
-            "tool_name": tool_name,
+            "action": tool_name,
+            "parameters": parameters,
             "status": "success",
-            "message": f"前端工具 '{tool_name}' 已准备执行",
-            "parameters": parameters
+            "message": f"成功执行前端工具: {tool_name}"
         }
     elif tool_name in BACKEND_TOOLS:
         result = {
             "tool_type": "backend",
-            "tool_name": tool_name,
+            "action": tool_name,
+            "parameters": parameters,
             "status": "success",
-            "message": f"后端工具 '{tool_name}' 已执行",
-            "parameters": parameters
+            "message": f"成功执行后端工具: {tool_name}"
         }
     else:
         result = {
             "tool_type": "unknown",
-            "tool_name": tool_name,
+            "action": tool_name,
+            "parameters": parameters,
             "status": "error",
-            "message": f"未知工具: {tool_name}",
-            "parameters": parameters
+            "message": f"未知工具: {tool_name}"
         }
-    
-    tool_results = state.get("tool_results", []) + [result]
     
     return {
         **state,
         "current_step": "observation",
         "tool_call_result": result,
-        "tool_results": tool_results
+        "tool_results": state["tool_results"] + [result]
     }
 
-def observe_and_decide(state: DevAgentState) -> DevAgentState:
-    """观察工具执行结果并决定下一步"""
-    tool_result = state["tool_call_result"]
-    thought_process = state["thought_process"]
+def observe_tool_result(state: DevAgentState) -> DevAgentState:
+    """观察工具调用结果"""
+    tool_call_result = state["tool_call_result"]
+    if not tool_call_result:
+        return {**state, "current_step": "final_answer", "reply": "工具调用未返回结果。"}
     
-    if tool_result:
-        observation = f"工具执行结果: {tool_result['message']}"
-        thought_process.append(observation)
-        
-        # 如果工具执行成功且是最终操作，则生成最终答案
-        if tool_result["status"] == "success":
-            final_answer = f"已成功执行操作: {tool_result['message']}"
-            return {
-                **state,
-                "current_step": "final_answer",
-                "reply": final_answer,
-                "thought_process": thought_process,
-                "is_final_answer": True
-            }
-        else:
-            # 工具执行失败，提供错误信息
-            error_answer = f"操作失败: {tool_result['message']}"
-            return {
-                **state,
-                "current_step": "final_answer",
-                "reply": error_answer,
-                "thought_process": thought_process,
-                "is_final_answer": True
-            }
-    else:
-        # 没有工具调用，直接生成回答
-        simple_answer = f"您的问题是: '{state['question']}'. 这是一个常规问题，不需要特殊工具处理。"
+    if tool_call_result["status"] == "success":
+        # 工具调用成功，生成最终回答
+        reply = f"操作成功: {tool_call_result['message']}"
         return {
             **state,
             "current_step": "final_answer",
-            "reply": simple_answer,
-            "thought_process": thought_process,
+            "reply": reply,
+            "is_final_answer": True
+        }
+    else:
+        # 工具调用失败
+        reply = f"操作失败: {tool_call_result['message']}"
+        return {
+            **state,
+            "current_step": "final_answer",
+            "reply": reply,
             "is_final_answer": True
         }
 
 def generate_final_answer(state: DevAgentState) -> DevAgentState:
-    """生成最终答案"""
-    if state["is_final_answer"] and state["reply"]:
-        return state
+    """生成最终回答"""
+    if state["is_final_answer"]:
+        if state["reply"]:
+            # 如果已经有回复，直接使用
+            final_reply = state["reply"]
+        elif state["messages"] and hasattr(state["messages"][-1], 'content'):
+            # 如果messages中有AI消息，使用最后一条AI消息
+            final_reply = state["messages"][-1].content
+        else:
+            # 默认回复
+            final_reply = "我已经处理了您的请求。"
+    else:
+        # 如果不是最终回答，生成一个默认回复
+        final_reply = "处理完成。"
     
-    # 如果还没有最终答案，生成一个
-    if not state["reply"]:
-        reply = "已完成处理您的请求。"
-        return {**state, "reply": reply, "is_final_answer": True}
-    
-    return state
+    return {
+        **state,
+        "reply": final_reply,
+        "is_final_answer": True
+    }
