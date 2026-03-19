@@ -506,6 +506,10 @@
                     const userQuestion = this.userInputMessage.trim();
                     this.userInputMessage = '';
                     
+                    // 获取右侧iframe的当前URL
+                    const iframe = document.querySelector('.iframe-container');
+                    const currentPreviewUrl = iframe ? iframe.contentWindow.location.href : window.location.origin + '/';
+                    
                     // 调用开发代理API
                     this.userLoading = true;
                     fetch('/api/dev-agent/consult', {
@@ -516,23 +520,49 @@
                         body: JSON.stringify({
                             user_id: 'dev_user',
                             question: userQuestion,
-                            session_id: this.currentSessionId
+                            session_id: this.currentSessionId,
+                            current_preview_url: currentPreviewUrl
                         })
                     })
                     .then(response => response.json())
                     .then(data => {
                         if (data.code === 200) {
-                            const botMessage = {
-                                id: Date.now() + 1,
-                                sender: 'bot',
-                                text: data.data.reply,
-                                time: this.getCurrentTime()
-                            };
-                            this.userMessages.push(botMessage);
-                            
-                            // 处理工具调用结果
-                            if (data.data.tool_call_result) {
-                                this.handleToolCallResult(data.data.tool_call_result);
+                            // 检查回复类型
+                            if (data.data.reply && data.data.reply.type === "tool_call_result") {
+                                // 处理工具调用结果
+                                this.handleToolCallResults(data.data.reply.tool_calls);
+                                
+                                // 添加确认消息
+                                const botMessage = {
+                                    id: Date.now() + 1,
+                                    sender: 'bot',
+                                    text: '已执行相应操作',
+                                    time: this.getCurrentTime()
+                                };
+                                this.userMessages.push(botMessage);
+                            } else if (data.data.reply && data.data.reply.type === "message_result") {
+                                // 处理普通消息
+                                const botMessage = {
+                                    id: Date.now() + 1,
+                                    sender: 'bot',
+                                    text: data.data.reply.messages,
+                                    time: this.getCurrentTime()
+                                };
+                                this.userMessages.push(botMessage);
+                            } else {
+                                // 兼容旧格式
+                                const botMessage = {
+                                    id: Date.now() + 1,
+                                    sender: 'bot',
+                                    text: data.data.reply,
+                                    time: this.getCurrentTime()
+                                };
+                                this.userMessages.push(botMessage);
+                                
+                                // 处理工具调用结果（旧格式）
+                                if (data.data.tool_call_result) {
+                                    this.handleToolCallResult(data.data.tool_call_result);
+                                }
                             }
                             
                             // 更新会话ID
@@ -561,7 +591,42 @@
                     });
                 },
                 
-                // 处理工具调用结果
+                // 前端工具列表
+                frontendTools: {
+                    navigate_to_page: (parameters) => {
+                        if (parameters.page_url) {
+                            // 修改右侧预览框iframe的URL
+                            console.log(`跳转到页面：${parameters.page_url}`);
+                            const iframe = document.querySelector('.iframe-container');
+                            if (iframe) {
+                                iframe.src = parameters.page_url;
+                            }
+                        }
+                    },
+                    refresh_robot: (parameters) => {
+                        // 刷新右侧iframe
+                        const iframe = document.querySelector('.iframe-container');
+                        if (iframe) {
+                            iframe.contentWindow.location.reload();
+                        }
+                    }
+                },
+                
+                // 处理多个工具调用结果
+                handleToolCallResults(toolCalls) {
+                    if (!Array.isArray(toolCalls)) {
+                        toolCalls = [toolCalls];
+                    }
+                    
+                    toolCalls.forEach(toolCall => {
+                        const { name, args } = toolCall;
+                        if (this.frontendTools[name]) {
+                            this.frontendTools[name](args);
+                        }
+                    });
+                },
+                
+                // 处理工具调用结果（兼容旧格式）
                 handleToolCallResult(toolResult) {
                     if (toolResult.tool_type === 'frontend') {
                         // 执行前端工具
@@ -633,6 +698,7 @@
                         .then(data => {
                             if (data.code === 200) {
                                 const filename = data.data.filename;
+                                const fileCollectionName = data.data.collection_name;
                                 
                                 // 添加"文件已上传"消息
                                 const uploadSuccessMessage = {
@@ -643,12 +709,17 @@
                                 };
                                 this.userMessages.push(uploadSuccessMessage);
                                 
+                                // 获取右侧iframe的当前URL
+                                const iframe = document.querySelector('.iframe-container');
+                                const currentPreviewUrl = iframe ? iframe.contentWindow.location.href : window.location.origin + '/';
+                                
                                 // 发送二次请求到dev-agent/consult接口
                                 const requestBody = {
                                     user_id: 'dev_user',
                                     question: '文件已上传，请处理',
                                     action: 'upload_file',
-                                    filename: filename
+                                    file_collection_name: fileCollectionName,
+                                    current_preview_url: currentPreviewUrl
                                 };
                                 
                                 // 只在session_id是非空字符串时才包含该字段

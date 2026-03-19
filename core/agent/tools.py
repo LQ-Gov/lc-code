@@ -2,6 +2,7 @@ from typing import Dict, Any, List, Optional
 from langchain_core.tools import tool
 from core.common.knowledge_service import KnowledgeBaseService
 from core.common.specific_question_service import SpecificQuestionService
+from core.common.vector_store import DocumentVectorStore
 
 
 @tool(description="Get all knowledge bases from the system")
@@ -268,7 +269,7 @@ def delete_special_question_flow(key: str) -> Dict[str, Any]:
         return {"error": f"Failed to delete special question flow: {str(e)}"}
 
 
-@tool(description="Navigate to a specified page URL (frontend tool)")
+@tool(description="Navigate to a specified page URL (frontend tool)",extras={"executor": "frontend"})
 def navigate_to_page(page_url: str, page_name: str = "") -> Dict[str, Any]:
     """
     Navigate to a specified page URL. This is a frontend tool that returns instructions for the frontend to execute.
@@ -290,7 +291,7 @@ def navigate_to_page(page_url: str, page_name: str = "") -> Dict[str, Any]:
     }
 
 
-@tool(description="Refresh the current page or interface (frontend tool)")
+@tool(description="Refresh the current page or interface (frontend tool)",extras={"executor": "frontend"})
 def refresh_page() -> Dict[str, Any]:
     """
     Refresh the current page or interface. This is a frontend tool that returns instructions for the frontend to execute.
@@ -303,3 +304,24 @@ def refresh_page() -> Dict[str, Any]:
         "tool_name": "refresh_robot",
         "parameters": {}
     }
+
+
+@tool(description="Search for information in a specific document collection in the vector store")
+def search_document_collection(collection_name: str, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
+    """
+    Search for information in a specific document collection in the vector store.
+    
+    Args:
+        collection_name: The name of the collection to search in
+        query: The search query text
+        n_results: Number of results to return (default: 5)
+        
+    Returns:
+        List of search results with content, source, chunk_index, total_chunks, and distance
+    """
+    try:
+        doc_vector_store = DocumentVectorStore()
+        results = doc_vector_store.search_in_document_collection(collection_name, query, n_results)
+        return results
+    except Exception as e:
+        return {"error": f"Failed to search document collection: {str(e)}"}

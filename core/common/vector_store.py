@@ -7,6 +7,7 @@ import json
 from typing import List, Dict, Optional, Tuple
 from core.common.db import db_query
 from core.common.config import CHROMA_PATH
+from core.common.utils import parse_document
 
 # 确保Chroma路径存在
 os.makedirs(CHROMA_PATH, exist_ok=True)
@@ -18,6 +19,13 @@ try:
 except ImportError:
     CHROMA_AVAILABLE = False
     print("Warning: chromadb not installed. Vector store functionality will be disabled.")
+
+try:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    TEXT_SPLITTER_AVAILABLE = True
+except ImportError:
+    TEXT_SPLITTER_AVAILABLE = False
+    print("Warning: langchain_text_splitters not installed. Document processing functionality will be limited.")
 
 class KnowledgeBaseVectorStore:
     """知识库向量存储类"""
@@ -208,3 +216,125 @@ class KnowledgeBaseVectorStore:
             "count": self.collection.count(),
             "path": CHROMA_PATH
         }
+
+
+class DocumentVectorStore:
+    """文档向量存储类，用于处理上传文档的向量存储"""
+    
+    def __init__(self):
+        if not CHROMA_AVAILABLE:
+            raise ImportError("chromadb is not installed. Please install it with: pip install chromadb")
+        if not TEXT_SPLITTER_AVAILABLE:
+            raise ImportError("langchain_text_splitters is not installed. Please install it with: pip install langchain-text-splitters")
+            
+        self.embedding_function = embedding_functions.DefaultEmbeddingFunction()
+        self.client = chromadb.PersistentClient(path=CHROMA_PATH)
+    
+    def process_and_store_document(self, file_path: str, collection_name: str = None) -> Dict:
+        """
+        处理并存储文档到向量库
+        
+        Args:
+            file_path: 文件路径
+            collection_name: 集合名称，如果为None则使用文件名（不含扩展名）
+            
+        Returns:
+            处理结果信息
+        """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+        
+        # 如果没有指定collection_name，使用文件名（不含扩展名）
+        if collection_name is None:
+            collection_name = os.path.splitext(os.path.basename(file_path))[0]
+        
+        # 读取文档内容
+        content = parse_document(file_path)
+        if not content.strip():
+            raise ValueError("Document content is empty")
+        
+        # 使用RecursiveCharacterTextSplitter进行文本切片
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            length_function=len,
+            separators=["\n\n", "\n", "。", "！", "？", ". ", "! ", "? ", " ", ""]
+        )
+        
+        chunks = text_splitter.split_text(content)
+        
+        if not chunks:
+            raise ValueError("No text chunks generated from document")
+        
+        # 创建或获取集合
+        collection = self.client.get_or_create_collection(
+            name=collection_name,
+            embedding_function=self.embedding_function
+        )
+        
+        # 准备批量插入的数据
+        documents = []
+        metadatas = []
+        ids = []
+        
+        for i, chunk in enumerate(chunks):
+            if chunk.strip():  # 只添加非空的chunk
+                documents.append(chunk)
+                metadatas.append({
+                    "source": file_path,
+                    "chunk_index": i,
+                    "total_chunks": len(chunks)
+                })
+                ids.append(f"doc_{i}")
+        
+        if not documents:
+            raise ValueError("No valid documents to store")
+        
+        # 批量添加到向量库
+        collection.add(
+            documents=documents,
+            metadatas=metadatas,
+            ids=ids
+        )
+        
+        return {
+            "collection_name": collection_name,
+            "total_chunks": len(documents),
+            "file_path": file_path,
+            "status": "success"
+        }
+    
+    def search_in_document_collection(self, collection_name: str, query: str, n_results: int = 5) -> List[Dict]:
+        """
+        在指定文档集合中搜索
+        
+        Args:
+            collection_name: 集合名称
+            query: 查询文本
+            n_results: 返回结果数量
+            
+        Returns:
+            搜索结果列表
+        """
+        try:
+            collection = self.client.get_collection(name=collection_name)
+        except ValueError:
+            raise ValueError(f"Collection not found: {collection_name}")
+        
+        results = collection.query(
+            query_texts=[query],
+            n_results=n_results
+        )
+        
+        search_results = []
+        if results['documents'] and results['metadatas']:
+            for i in range(len(results['documents'][0])):
+                search_results.append({
+                    "content": results['documents'][0][i],
+                    "source": results['metadatas'][0][i]['source'],
+                    "chunk_index": results['metadatas'][0][i]['chunk_index'],
+                    "total_chunks": results['metadatas'][0][i]['total_chunks'],
+                    "distance": results['distances'][0][i] if results['distances'] else None
+                })
+        
+        return search_results

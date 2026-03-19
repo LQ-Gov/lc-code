@@ -3,168 +3,125 @@ from core.common.utils import generate_id
 from typing import Dict, Any, List, Optional
 import json
 from core.common.qwen_utils import get_qwen_model
-from langchain_core.messages import AIMessage,SystemMessage
+from langchain_core.messages import AIMessage,SystemMessage, ToolMessage, HumanMessage
+from core.agent.tools import (
+    get_all_knowledge_bases,
+    get_current_knowledge_base_url,
+    get_enabled_special_question_flows,
+    get_specific_question_flow,
+    create_knowledge_base,
+    update_knowledge_base,
+    delete_knowledge_base,
+    rebuild_knowledge_base,
+    rebuild_current_knowledge_base,
+    get_knowledge_base_by_id,
+    get_all_special_question_flows,
+    create_special_question_flow,
+    update_special_question_flow,
+    delete_special_question_flow,
+    format_special_questions_for_prompt,
+    navigate_to_page,
+    refresh_page,
+    search_document_collection
+)
 
-# 前端工具定义
-FRONTEND_TOOLS = {
-    "navigate_to_page": {
-        "description": "跳转到指定页面",
-        "parameters": {"page_url": "目标页面URL", "page_name": "页面名称"}
-    },
-    "refresh_robot": {
-        "description": "刷新客服机器人界面",
-        "parameters": {}
-    },
-    "show_notification": {
-        "description": "显示通知消息",
-        "parameters": {"message": "通知内容", "type": "通知类型 (info/success/warning/error)"}
-    }
+tools = {
+    "get_all_knowledge_bases": get_all_knowledge_bases,
+    "get_current_knowledge_base_url": get_current_knowledge_base_url,
+    "get_knowledge_base_by_id": get_knowledge_base_by_id,
+    "create_knowledge_base": create_knowledge_base,
+    "update_knowledge_base": update_knowledge_base,
+    "delete_knowledge_base": delete_knowledge_base,
+    "rebuild_knowledge_base": rebuild_knowledge_base,
+    "rebuild_current_knowledge_base": rebuild_current_knowledge_base,
+    "get_enabled_special_question_flows": get_enabled_special_question_flows,
+    "get_specific_question_flow": get_specific_question_flow,
+    "get_all_special_question_flows": get_all_special_question_flows,
+    "create_special_question_flow": create_special_question_flow,
+    "update_special_question_flow": update_special_question_flow,
+    "delete_special_question_flow": delete_special_question_flow,
+    "format_special_questions_for_prompt": format_special_questions_for_prompt,
+    "navigate_to_page": navigate_to_page,
+    "refresh_page": refresh_page,
+    "search_document_collection": search_document_collection
 }
 
-# 后端工具定义
-BACKEND_TOOLS = {
-    "add_knowledge_base": {
-        "description": "向知识库添加新条目",
-        "parameters": {"question": "问题", "answer": "答案", "category": "分类"}
-    },
-    "delete_knowledge_base": {
-        "description": "从知识库删除条目",
-        "parameters": {"kb_id": "知识库条目ID"}
-    },
-    "update_knowledge_base": {
-        "description": "更新知识库条目",
-        "parameters": {"kb_id": "知识库条目ID", "question": "新问题", "answer": "新答案", "category": "新分类"}
-    },
-    "add_special_flow": {
-        "description": "添加特定流程",
-        "parameters": {"flow_name": "流程名称", "steps": "流程步骤列表", "trigger_words": "触发关键词"}
-    },
-    "delete_special_flow": {
-        "description": "删除特定流程",
-        "parameters": {"flow_id": "流程ID"}
-    },
-    "update_special_flow": {
-        "description": "更新特定流程",
-        "parameters": {"flow_id": "流程ID", "flow_name": "新流程名称", "steps": "新流程步骤", "trigger_words": "新触发关键词"}
-    }
-}
-
-def get_all_available_tools() -> List[str]:
-    """获取所有可用工具列表"""
-    return list(FRONTEND_TOOLS.keys()) + list(BACKEND_TOOLS.keys())
+tool_function_list = tools.values()
 
 def think_about_question(state: DevAgentState) -> DevAgentState:
     """思考阶段：分析用户问题并决定是否需要调用工具"""
     messages = state['messages']
-    question = state["messages"][-1].content
+
+    if state["action"] == "upload_file":
+        return {"messages":[AIMessage(content="请描述具体需求")]}
+    
+    # 如果messages为空，说明是初始状态，需要从question字段获取用户输入
+    if not messages:
+        user_message = HumanMessage(content=state["question"])
+        messages_to_send = [user_message]
+    else:
+        # 如果messages不为空，使用最后一条消息作为用户输入
+        user_message = messages[-1]
+        messages_to_send = messages
     
     # 调用大模型判断是否需要工具调用
     model = get_qwen_model()
+    model = model.bind_tools(tool_function_list)
 
-    model = model.bind_tools([])
+    
+    prompt = f"""You are an intelligent development assistant helping users modify their customer service chatbot.
+The current page displayed in the frontend is: {state['current_preview_url']}
 
-    
-    prompt = f"""你是一个智能开发助手，需要根据用户的问题来协助用户修改客服机器人。
-    前端展示的当前页面为: {state['current_preview_url']}
-    
-    你需要:
-    1.根据问题判断是否需要调用页面跳转/页面刷新工具
-    2.判断是否需要读取文件，用户的问题有部分内容可能依赖之前上传的文件
-    3.判断是是否调用其他工具来执行操作
-    4.如果用户的当前不支持执行，请输出"当前不支持该操作"
-    """
+Your tasks are:
+1. Determine if you need to call page navigation or page refresh tools based on the user's question
+2. Check if you need to read uploaded files, as the user's question may depend on previously uploaded files. If you need to depend on uploaded files, you can search through the vector database. The current collection of uploaded files is available: {state['file_collection_name']}.
+3. Decide whether to call other tools to perform operations
+4. If the current request is not supported, output "Current operation is not supported"
+"""
     
     
-    response = model.invoke([*messages, SystemMessage(content=prompt)])
+    response = model.invoke([*messages_to_send, SystemMessage(content=prompt)])
 
     return {"messages":[response]}
         
 
-def execute_tool_action(state: DevAgentState) -> DevAgentState:
-    """执行工具调用"""
-    call_tool = state["call_tool"]
-    if not call_tool:
-        return {**state, "current_step": "observation", "tool_call_result": None}
+def observe_and_decide(state: DevAgentState) -> Dict[str, Any]:
+    """观察工具调用结果并通过大模型判断当前客服机器人状态是否满足用户需求"""
+    messages = state['messages']
     
-    tool_name = call_tool["tool_name"]
-    parameters = call_tool.get("parameters", {})
+    # 调用大模型分析工具调用结果
+    model = get_qwen_model()
+    model = model.bind_tools(tool_function_list)
     
-    # 模拟工具执行结果
-    if tool_name in FRONTEND_TOOLS:
-        result = {
-            "tool_type": "frontend",
-            "action": tool_name,
-            "parameters": parameters,
-            "status": "success",
-            "message": f"成功执行前端工具: {tool_name}"
-        }
-    elif tool_name in BACKEND_TOOLS:
-        result = {
-            "tool_type": "backend",
-            "action": tool_name,
-            "parameters": parameters,
-            "status": "success",
-            "message": f"成功执行后端工具: {tool_name}"
-        }
-    else:
-        result = {
-            "tool_type": "unknown",
-            "action": tool_name,
-            "parameters": parameters,
-            "status": "error",
-            "message": f"未知工具: {tool_name}"
-        }
-    
-    return {
-        **state,
-        "current_step": "observation",
-        "tool_call_result": result,
-        "tool_results": state["tool_results"] + [result]
-    }
+    # 构建系统提示词，指导大模型分析当前状态
+    prompt = """You are an intelligent development assistant helping users modify their customer service chatbot.
+Your task is to analyze the tool execution results and determine if the current chatbot state satisfies the user's requirements.
 
-def observe_tool_result(state: DevAgentState) -> DevAgentState:
-    """观察工具调用结果"""
-    tool_call_result = state["tool_call_result"]
-    if not tool_call_result:
-        return {**state, "current_step": "final_answer", "reply": "工具调用未返回结果。"}
+Please consider:
+1. Review the tool execution results carefully
+2. Determine if the user's original request has been fully addressed
+3. If more actions are needed, decide what specific tools should be called next
+4. If the request is complete, provide a final response to the user
+
+Remember to use available tools when additional information or actions are required."""
     
-    if tool_call_result["status"] == "success":
-        # 工具调用成功，生成最终回答
-        reply = f"操作成功: {tool_call_result['message']}"
-        return {
-            **state,
-            "current_step": "final_answer",
-            "reply": reply,
-            "is_final_answer": True
-        }
-    else:
-        # 工具调用失败
-        reply = f"操作失败: {tool_call_result['message']}"
-        return {
-            **state,
-            "current_step": "final_answer",
-            "reply": reply,
-            "is_final_answer": True
-        }
+    # 调用大模型进行分析和决策
+    response = model.invoke([*messages, SystemMessage(content=prompt)])
+    
+    # 根据 LangGraph 规范，直接返回新消息
+    return {"messages": [response]}
 
 def generate_final_answer(state: DevAgentState) -> DevAgentState:
     """生成最终回答"""
-    if state["is_final_answer"]:
-        if state["reply"]:
-            # 如果已经有回复，直接使用
-            final_reply = state["reply"]
-        elif state["messages"] and hasattr(state["messages"][-1], 'content'):
-            # 如果messages中有AI消息，使用最后一条AI消息
-            final_reply = state["messages"][-1].content
-        else:
-            # 默认回复
-            final_reply = "我已经处理了您的请求。"
-    else:
-        # 如果不是最终回答，生成一个默认回复
-        final_reply = "处理完成。"
+    messages = state['messages']
     
-    return {
-        **state,
-        "reply": final_reply,
-        "is_final_answer": True
-    }
+    # 添加安全检查
+    if not messages:
+        return {"reply": {"type": "message_result", "messages": "抱歉，处理过程中出现了问题。"}}
+    
+    last = messages[-1]
+
+    if hasattr(last, 'tool_calls') and last.tool_calls:
+        return {"messages":[ToolMessage(tool_call_id=last.tool_calls[0]["id"],content="已转发至前端调用")], "reply":{"type":"tool_call_result", "tool_calls":last.tool_calls}}
+    
+    return {"reply":{"type":"message_result","messages": last.content}}

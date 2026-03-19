@@ -21,6 +21,9 @@ from web.error_feedback_api import ef_router
 from web.vector_store_api import vs_router
 from web.config_api import config_router
 
+# 导入向量库存储模块
+from core.common.vector_store import DocumentVectorStore
+
 app = FastAPI(title="客服AI机器人+元智能体API", version="1.0")
 
 # Add CORS middleware to allow requests from UI
@@ -54,6 +57,8 @@ class DevAgentRequest(BaseModel):
     history: Optional[List[Any]] = None
     action: Optional[str] = None
     filename: Optional[str] = None
+    file_collection_name: Optional[str] = None
+    current_preview_url: Optional[str] = None
 
 class MetaAgentGenerateRequest(BaseModel):
     manager_id: str
@@ -102,17 +107,19 @@ def robot_consult(req: RobotConsultRequest):
 @app.post("/api/dev-agent/consult", summary="开发代理咨询接口")
 def dev_agent_consult(req: DevAgentRequest):
     # 处理文件上传action
-    if req.action == "upload_file" and req.filename:
-        uploaded_files = [req.filename]
+    if req.action == "upload_file":
+        # 使用file_collection_name参数，如果不存在则回退到filename（向后兼容）
+        file_collection_name = req.file_collection_name or req.filename
     else:
-        uploaded_files = []
+        file_collection_name = None
     
     result = dev_agent_invoke(
         user_id=req.user_id,
         question=req.question,
         session_id=req.session_id,
-        history=req.history,
-        uploaded_files=uploaded_files
+        action=req.action,
+        file_collection_name=file_collection_name,
+        current_preview_url=req.current_preview_url
     )
     
     return {
@@ -145,13 +152,33 @@ async def upload_file(file: UploadFile = File(...)):
         with open(file_path, "wb") as f:
             f.write(await file.read())
         
-        return {
-            "code": 200,
-            "msg": "文件上传成功",
-            "data": {
-                "filename": new_filename
+        # 处理并存储到向量库
+        try:
+            doc_vector_store = DocumentVectorStore()
+            # 使用时间戳文件名（不含扩展名）作为collection名称，而不是原始文件名
+            collection_name = os.path.splitext(new_filename)[0]
+            result = doc_vector_store.process_and_store_document(file_path, collection_name=collection_name)
+            
+            return {
+                "code": 200,
+                "msg": "文件上传成功并已存储到向量库",
+                "data": {
+                    "filename": new_filename,
+                    "collection_name": result["collection_name"],
+                    "total_chunks": result["total_chunks"]
+                }
             }
-        }
+        except Exception as vector_error:
+            # 如果向量库存储失败，仍然返回文件上传成功，但记录错误
+            print(f"Warning: Vector store processing failed: {vector_error}")
+            return {
+                "code": 200,
+                "msg": "文件上传成功，但向量库存储失败",
+                "data": {
+                    "filename": new_filename,
+                    "error": str(vector_error)
+                }
+            }
     except Exception as e:
         return {"code": 500, "msg": f"文件上传失败: {str(e)}", "data": {}}
 

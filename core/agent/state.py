@@ -6,7 +6,7 @@ class DevAgentState(TypedDict):
     session_id: str
     user_id: str
     question: str
-    history: List[Dict[str, Any]]
+    action:str
     tool_call_result: Optional[Dict[str, Any]]
     call_tool: Optional[Dict[str, Any]]
     reply: Optional[str]
@@ -16,4 +16,5 @@ class DevAgentState(TypedDict):
     tool_results: List[Dict[str, Any]]
     thought_process: List[str]
     is_final_answer: bool
-    uploaded_files: List[str]
+    file_collection_name: Optional[str]
+    current_preview_url: Optional[str]

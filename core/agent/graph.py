@@ -1,18 +1,37 @@
 from langgraph.graph import StateGraph, START, END
 from core.agent.state import DevAgentState
 from langgraph.prebuilt import ToolNode
+from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.messages import AIMessage,SystemMessage, ToolMessage, HumanMessage
 from core.agent.nodes import (
     think_about_question,
-    execute_tool_action,
+    
+    tools,
     observe_and_decide,
     generate_final_answer
 )
 
 def should_continue(state: DevAgentState) -> str:
     """决定是否继续执行工具调用"""
-    last_message = state["messages"][-1]
+    messages = state["messages"]
+    # 添加安全检查，确保messages不为空
+    if not messages:
+        return "end"
+    
+    
+    
+    last_message = messages[-1]
+
+
     if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
-        return "continue"
+        call = last_message.tool_calls[0]
+        name = call["name"]
+        t = tools[name]
+        executor = t.extras['executor'] if t.extras else None
+        if executor=="frontend":
+            return "end"
+        else:
+            return "continue"
     else:
         return "end"
 
@@ -22,7 +41,7 @@ def build_dev_agent_graph():
     
     # 添加节点
     graph.add_node("think", think_about_question)
-    graph.add_node("act", ToolNode())
+    graph.add_node("act", ToolNode(tools.values()))
     graph.add_node("observe", observe_and_decide)
     graph.add_node("answer", generate_final_answer)
     
@@ -46,49 +65,67 @@ def build_dev_agent_graph():
         }
     )
     graph.add_edge("answer", END)
-    
-    return graph.compile()
+
+    memory = MemorySaver()
+    return graph.compile(checkpointer=memory)
 
 # 初始化开发代理图
 dev_agent_graph = build_dev_agent_graph()
 
-def dev_agent_invoke(user_id: str, question: str, session_id: str = None, history: list = None, uploaded_files: list = None):
+def dev_agent_invoke(user_id: str, question: str, session_id: str = None, action:str = None, file_collection_name: str = None, current_preview_url: str = None):
     """开发代理调用入口"""
     if session_id is None:
         from core.common.utils import generate_id
         session_id = generate_id("dev_session")
     
-    if history is None:
-        history = []
+    # if history is None:
+    #     history = []
     
-    if uploaded_files is None:
-        uploaded_files = []
+    # initial_state = {
+    #     "session_id": session_id,
+    #     "user_id": user_id,
+    #     "question": question,
+    #     "history": history,
+    #     "tool_call_result": None,
+    #     "call_tool": None,
+    #     "reply": None,
+    #     "messages": [],
+    #     "current_step": "thought",
+    #     "available_tools": [],
+    #     "tool_results": [],
+    #     "thought_process": [],
+    #     "is_final_answer": False,
+    #     "file_collection_name": file_collection_name,
+    #     "current_preview_url": current_preview_url
+    # }
+
+    state = {}
+    if file_collection_name:
+        state['file_collection_name'] = file_collection_name
+    if question:
+        state['messages'] = [HumanMessage(content=question)]
+    if current_preview_url:
+        state['current_preview_url'] = current_preview_url
     
-    initial_state = {
-        "session_id": session_id,
-        "user_id": user_id,
-        "question": question,
-        "history": history,
-        "tool_call_result": None,
-        "call_tool": None,
-        "reply": None,
-        "messages": [],
-        "current_step": "thought",
-        "available_tools": [],
-        "tool_results": [],
-        "thought_process": [],
-        "is_final_answer": False,
-        "uploaded_files": uploaded_files
-    }
+    state['action'] = action
+    if user_id:
+        state['user_id'] = user_id
+    if session_id:
+        state['session_id'] = session_id
+    # initial_state["messages"].append(HumanMessage(content=question))
     
     try:
-        result = dev_agent_graph.invoke(initial_state)
+        # 使用MemorySaver时，需要传递config参数来指定thread_id
+        config = {"configurable": {"thread_id": session_id}}
+        latest_state = dev_agent_graph.get_state(config=config)
+       
+        result = dev_agent_graph.invoke(state, config=config)
         return {
             "session_id": result["session_id"],
             "reply": result["reply"],
-            "tool_call_result": result["tool_call_result"],
-            "thought_process": result["thought_process"],
-            "is_final_answer": result["is_final_answer"]
+            "tool_call_result": result.get("tool_call_result"),
+            "thought_process": result.get("thought_process"),
+            "is_final_answer": result.get("is_final_answer")
         }
     except Exception as e:
         return {
