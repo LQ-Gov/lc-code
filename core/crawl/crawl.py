@@ -3,6 +3,9 @@ import sys
 # 添加项目根目录到Python路径，以便能够导入core模块
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import json
 import hashlib
 import asyncio
@@ -55,6 +58,7 @@ class QACrawler:
     当无特征缓存时直接使用大模型提取Q&A内容，并反向生成特征
     对已爬取的网页直接跳过，避免重复处理
     """
+
     
     def __init__(self, max_depth: int = 2, output_file: Optional[str] = None, concurrency: int = 10, callback: CrawlCallback = None):
         self.max_depth = max_depth
@@ -76,8 +80,21 @@ class QACrawler:
         # 回调对象
         self.callback = callback or CrawlCallback()
         
+        # 从环境变量加载代理配置
+        proxy_server = os.getenv("CRAWLER_PROXY_SERVER")
+        proxy_username = os.getenv("CRAWLER_PROXY_USERNAME")
+        proxy_password = os.getenv("CRAWLER_PROXY_PASSWORD")
+        
+        self.ISP_PROXY = None
+        if proxy_server:
+            self.ISP_PROXY = {"server": proxy_server}
+            if proxy_username and proxy_password:
+                self.ISP_PROXY["username"] = proxy_username
+                self.ISP_PROXY["password"] = proxy_password
+        
         # 配置crawl4ai用于纯HTML内容提取
         self.crawler_config = CrawlerRunConfig(
+            proxy_config=self.ISP_PROXY,
             process_in_browser=False,
             scraping_strategy=LXMLWebScrapingStrategy(),
             word_count_threshold=10,
