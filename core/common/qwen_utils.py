@@ -78,8 +78,8 @@ def get_qwen_model():
         api_key=QWEN_API_KEY,
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         temperature=0.3,
-        max_tokens=2000
-        # callbacks=[logger]
+        max_tokens=2000,
+        callbacks=[logger]
     )
 
 def match_knowledge_base_with_qwen(question: str, kb_content: str) -> Dict[str, Any]:
