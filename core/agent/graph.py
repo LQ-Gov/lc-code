@@ -103,7 +103,10 @@ def dev_agent_invoke(user_id: str, question: str, session_id: str = None, action
     if file_collection_name:
         state['file_collection_name'] = file_collection_name
     if question:
-        state['messages'] = [HumanMessage(content=question)]
+        if action=="upload_file":
+            state['messages'] = [HumanMessage(content=f"文件已保存至向量库:{file_collection_name},后续指令的具体内容在此向量库中进行检索")]
+        else:
+            state['messages'] = [HumanMessage(content=question)]
     if current_preview_url:
         state['current_preview_url'] = current_preview_url
     
