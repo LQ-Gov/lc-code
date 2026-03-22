@@ -293,6 +293,7 @@ def delete_special_question_flow(key: str) -> Dict[str, Any]:
 def navigate_to_page(page_url: str, page_name: str = "") -> Dict[str, Any]:
     """
     Navigate to a specified page URL. This is a frontend tool that returns instructions for the frontend to execute.
+    Triggered when the current URL not the page to be modified.
     
     Args:
         page_url: The URL to navigate to. Only allowed URLs are:
@@ -316,10 +317,11 @@ def navigate_to_page(page_url: str, page_name: str = "") -> Dict[str, Any]:
     }
 
 
-@tool(description="Refresh the current page or interface (frontend tool)",extras={"executor": "frontend"})
+@tool(description="Refresh the current page or interface (frontend tool)",extras={"executor": "frontend"},parse_docstring=True)
 def refresh_page() -> Dict[str, Any]:
     """
     Refresh the current page or interface. This is a frontend tool that returns instructions for the frontend to execute.
+    Triggered when the current URL is the page to be modified.
     
     Returns:
         JSON result with method name and parameters for frontend execution
