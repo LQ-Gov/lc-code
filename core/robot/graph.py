@@ -117,7 +117,8 @@ def robot_invoke(user_id: str, question: str, session_id: str = None, reply_styl
         "specific_question_type": None,
         "fix_desc": None,
         "classification": classification,
-        "messages": []
+        "messages": [],
+        "act_think_cycle_count":0
     }
     
     # 如果当前有状态，继承现有的messages

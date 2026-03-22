@@ -145,57 +145,23 @@ Ensure your response is clear, accurate, and strictly follows the above format t
             
             result = llm_with_tools.invoke([*messages,sm])
 
-            print(result)
+            # 增加act-think循环计数器
+            current_cycle_count = state.get("act_think_cycle_count", 0)
+            new_cycle_count = current_cycle_count + 1
 
-            return {"messages":[result]}
+            return {"messages":[result],"act_think_cycle_count": new_cycle_count}
             
         else:
             # No flow configuration found, fallback to generic response
             reply = f"Sorry, I cannot handle the specific question type '{classification}' at the moment."
-            tool_result = {
-                "dynamic_response": None,
-                "flow_used": False,
-                "thought": None,
-                "action": None,
-                "next_step": "end_conversation"
-            }
-        
-        # 封装工具调用结果，包含下一步要做的事情
-        tool_call_result = {
-            "tool_name": classification if classification else None,
-            "result": tool_result,
-            "success": True,
-            "error": None,
-            "next_step": tool_result.get("next_step", "end_conversation")
-        }
-        return {**state, "reply": reply, "tool_call_result": tool_call_result, "error_feedback": None}
-    except Exception as e:
-        # 工具调用失败，生成错误反馈
-        # feedback_id = generate_id("feedback")
-        # error_feedback = {
-        #     "feedback_id": feedback_id,
-        #     "error_type": ERROR_TYPES[3], # 工具调用失败
-        #     "error_desc": f"特定问题工具调用失败：{str(e)}",
-        #     "fix_status": "未修复"
-        # }
-        # db_execute(
-        #     "INSERT INTO error_feedback (feedback_id, session_id, question, robot_reply, error_type, error_desc, create_time, fix_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        #     (feedback_id, state["session_id"], question, "", ERROR_TYPES[3], error_feedback["error_desc"], format_time(), "未修复")
-        # )
-        # return {**state, "error_feedback": error_feedback, "tool_call_result": None, "is_system_error": True}
-        raise e
 
-def _parse_output(text: str):
-    """Parse LLM output to extract Thought and Action."""
-    # Match Thought: until Action: or end of text
-    thought_match = re.search(r"Thought:\s*(.*?)(?=\nAction:|$)", text, re.DOTALL)
-    # Match Action: until end of text
-    action_match = re.search(r"Action:\s*(.*?)$", text, re.DOTALL)
-    
-    thought = thought_match.group(1).strip() if thought_match else ""
-    action = action_match.group(1).strip() if action_match else ""
-    
-    return thought, action
+            # 增加act-think循环计数器
+            current_cycle_count = state.get("act_think_cycle_count", 0)
+            new_cycle_count = current_cycle_count + 1
+
+            return {"messages":[AIMessage(content=reply)],"act_think_cycle_count": new_cycle_count}
+    except Exception as e:
+        raise e
 
 # 节点5：无效问题处理
 def handle_invalid_question(state: CustomerServiceRobotState) -> CustomerServiceRobotState:

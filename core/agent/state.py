@@ -18,3 +18,4 @@ class DevAgentState(TypedDict):
     is_final_answer: bool
     file_collection_name: Optional[str]
     current_preview_url: Optional[str]
+    act_think_cycle_count: int  # Track the number of act-think cycles

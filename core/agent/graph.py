@@ -18,10 +18,7 @@ def should_continue(state: DevAgentState) -> str:
     if not messages:
         return "end"
     
-    
-    
     last_message = messages[-1]
-
 
     if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
         call = last_message.tool_calls[0]
@@ -115,6 +112,8 @@ def dev_agent_invoke(user_id: str, question: str, session_id: str = None, action
         state['user_id'] = user_id
     if session_id:
         state['session_id'] = session_id
+    # 初始化act-think循环计数器
+    state['act_think_cycle_count'] = 0
     # initial_state["messages"].append(HumanMessage(content=question))
     
     try:

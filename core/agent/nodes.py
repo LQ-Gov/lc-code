@@ -112,6 +112,11 @@ def think_about_question(state: DevAgentState) -> DevAgentState:
     if state["action"] == "upload_file":
         return {"messages":[AIMessage(content="请描述具体需求")]}
     
+    # 检查act-think循环次数是否超过10次
+    cycle_count = state.get("act_think_cycle_count", 0)
+    if cycle_count >= 10:
+        return {"messages": [AIMessage(content="超过最大的循环次数")], "act_think_cycle_count": cycle_count+1}
+    
     # 如果messages为空，说明是初始状态，需要从question字段获取用户输入
     if not messages:
         user_message = HumanMessage(content=state["question"])
@@ -148,7 +153,11 @@ Always ensure the user can immediately see the results of their requested modifi
     
     response = model.invoke([*messages_to_send, SystemMessage(content=prompt)])
 
-    return {"messages":[response]}
+    # 增加act-think循环计数器
+    current_cycle_count = state.get("act_think_cycle_count", 0)
+    new_cycle_count = current_cycle_count + 1
+    
+    return {"messages":[response], "act_think_cycle_count": new_cycle_count}
         
 
 def observe_and_decide(state: DevAgentState) -> Dict[str, Any]:

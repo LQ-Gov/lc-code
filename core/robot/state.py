@@ -20,3 +20,4 @@ class CustomerServiceRobotState(TypedDict):
     fix_desc: Optional[str]
     classification:str
     messages: Annotated[list, add]
+    act_think_cycle_count: int  # Track the number of act-think cycles
