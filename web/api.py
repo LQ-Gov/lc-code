@@ -8,8 +8,6 @@ from pydantic import BaseModel
 from typing import List, Optional, Any
 from core.robot.graph import robot_invoke
 from core.agent.graph import dev_agent_invoke
-from core.crawl.graph import crawler_graph
-from core.crawl.state import CrawlState
 from core.common.db import init_db
 from datetime import datetime
 import uuid
@@ -182,16 +180,6 @@ async def upload_file(file: UploadFile = File(...)):
     except Exception as e:
         return {"code": 500, "msg": f"文件上传失败: {str(e)}", "data": {}}
 
-# 爬虫接口
-@app.post("/api/crawler/crawl", summary="启动爬虫")
-def crawl_endpoint(req: CrawlRequest):
-    try:
-        crawl_state = CrawlState(seed_url=req.seed_url)
-        result = crawler_graph.invoke(crawl_state)
-        return {"code": 200, "msg": "爬取完成", "data": result}
-    except Exception as e:
-        return {"code": 500, "msg": str(e), "data": {}}
-
 
 # 健康检查接口
 @app.get("/api/health", summary="服务健康检查")
@@ -200,6 +188,7 @@ def health_check():
 
 # Root route to serve the main frontend page
 @app.get("/", response_class=HTMLResponse, summary="访问前端页面")
+@app.get("/robot", response_class=HTMLResponse, summary="访问前端页面")
 async def serve_frontend():
     ui_index_path = os.path.join(os.path.dirname(__file__), "..", "ui", "index.html")
     if os.path.exists(ui_index_path):

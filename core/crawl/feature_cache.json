@@ -1,0 +1,1813 @@
+{
+  "5d806a297f6da047": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      "#main-content h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "3072cb84f1f98039": {
+    "skip": true
+  },
+  "2ff77c7041cf345f": {
+    "skip": true
+  },
+  "2be5e4cef0ae3372": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "0cb3221ca6a1825e": {
+    "skip": true
+  },
+  "89d70eeee61e913e": {
+    "skip": true
+  },
+  "9091ec4b9c84960a": {
+    "skip": true
+  },
+  "30567dab68747632": {
+    "skip": true
+  },
+  "cfdaf3bbeb81355b": {
+    "skip": true
+  },
+  "b8799b5325686c3b": {
+    "skip": true
+  },
+  "7e3edc1ad4cf93fb": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "0ffb1b20c4e593bb": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body",
+      "#main-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "4b58b47e1a83ddf8": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "240651505361a017": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "e5e8647912bbb610": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "8965ae270593651e": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body",
+      "#main-content .article"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "4f110057603203df": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "21f17d76f3ea108b": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "83c6b538fc5dc963": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "f0d5b9b87a145b57": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "99f85eba93c23dbf": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "eb876ac97eac9484": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "377c99c878b5cc69": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-container h1"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "902ebe6c59756dc8": {
+    "skip": true
+  },
+  "7677a0685c44ffb8": {
+    "skip": true
+  },
+  "a99a1cb354b015f9": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      "#article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "d10431fdc59b5c7b": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "169d28938fc63291": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "a6177ac55db785bd": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "235c34a911a5504c": {
+    "skip": true
+  },
+  "cfc82a3d4c095950": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "a8e9572f8987b304": {
+    "skip": true
+  },
+  "1f7083b16b16898f": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-container .article-content",
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "ea4bba044e10efde": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "e22bfdf7df56f857": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "support",
+      "article"
+    ]
+  },
+  "31b7848250bbe82e": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "885ffa2decf5ded7": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "214d55f0f56cd3ea": {
+    "type": "css_selector",
+    "question_selector": [
+      "#main-content h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "f141c79e1b21202e": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-container .article",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "472032fb66e0a98a": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "ce4f94882679c146": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "9bb3d5edfceda1ca": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-container .content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "8252c95cd76877af": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "6808f0565e20eaa9": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "4a259d7ec90b2e47": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "8c9017d667e4da4e": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "cb4e9fd342c7f03d": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "0c95e15f1ba45d65": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "8f998c8fa474445a": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "42de8a7a0bee8a54": {
+    "skip": true
+  },
+  "37a9fe04d83ef63f": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-container .content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "4c37163b02ee8d88": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      "#main-content .article",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "2ad61e34a87aaab0": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-container .article-content",
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "a9c89ed2fee8252d": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      "#main-content .article-container p",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "c31b4512aac31407": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "3bdb6b54622f5d02": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "b88ce097f9bf7406": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "de481ce973294834": {
+    "skip": true
+  },
+  "ab2717bd253fa41c": {
+    "skip": true
+  },
+  "d8a8bba656acc9d8": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "2bf750029c63579e": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "2606d0e84564813f": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-container .article__content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "9dbf2b2a59d80b82": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "b998d83ba9b5f446": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "29ac0f8769453b44": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "eb37164bef29eda0": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "aeadc7810ba4ddba": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "8e029255c0d2bc9d": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-container .content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "5860acc4956f2fd0": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      "#article-container .content",
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "070a1f98e47053fc": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      "#article-container .content",
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "e96e01dd840f837f": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      "#main-content .article-container > .article-body",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "78c8fb04fdb37748": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "cff6e97ec87ba169": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "20b09e05babee7a9": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      "#article-container .content",
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "0685ed6955932e9c": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "94d343172b50c60e": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-container .article__content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "9204e53b5a55e9e2": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      "#article-container .article-body",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "e681277e4e29ae80": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "b50192d2ace394ea": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "90971267f3b88484": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "6870c728b87e792a": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "5f65850610aa89f9": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "ea208e5ad3ccf0bf": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-header h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "a0e6f4a08ed15168": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "dec66a5a09c48930": {
+    "skip": true
+  },
+  "3d5c36e9061b1a44": {
+    "skip": true
+  },
+  "34f5f11c788e959d": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-container .content",
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "ed72cb1922bf9ef1": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body",
+      "#main-content .article"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "76e592d4dff2906e": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "61f78af9e7a103e7": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body",
+      ".article-container .article-content p"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "1b3dc4f02137186b": {
+    "skip": true
+  },
+  "a4fe948fc2eca375": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "ef7a384aa41ae0c6": {
+    "skip": true
+  },
+  "9d17c54c4ba3b9d4": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "01b07e63d955fdf0": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "c85e90ebd9f01aca": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "50346b7bbf09cbf6": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-list-link"
+    ],
+    "answer_selector": [
+      ".section-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "4a8ef9cf6ac35583": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-content",
+      ".article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "1c1cd481569b6090": {
+    "skip": true
+  },
+  "7d693728df535881": {
+    "skip": true
+  },
+  "732c449e97bb621e": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content",
+      ".article-container .content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "f87e3c3583dddff6": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content",
+      "#main-content .article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "26c2eb8d8dd37881": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content",
+      ".article-container .content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "93fc4322873bc04c": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "3db96f73a2b48b77": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "1384cb0f137cfc3e": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article h1"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "6b3b1faf23387794": {
+    "skip": true
+  },
+  "a813b6d789f971f6": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "68960e9232c9820d": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content",
+      ".article-container .content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "49c399db4257a9b5": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content",
+      ".article-container .article__content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "caf86bfdcd327e6f": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article h1"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "901c88b586639da7": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content",
+      "#main-content .article-body"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "242e078561c9d128": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content",
+      ".article-container .content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "7bdae8e8336d4e95": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "f50f2777e606f7f1": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "4ae8f67e0f5b908c": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content",
+      ".article-container .content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "652fd0af1af56306": {
+    "type": "css_selector",
+    "question_selector": [
+      "h1.article-title",
+      ".article-header h1"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "afaf903bd5252431": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      "#main-content .article-container .content",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help",
+      "article"
+    ]
+  },
+  "f91ecb829558354d": {
+    "skip": true
+  },
+  "feea915ce5e2612a": {
+    "skip": true
+  },
+  "756f52834fc248f3": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article-container h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "3ff04d4d2946fac6": {
+    "skip": true
+  },
+  "5d5e22109bcc46b6": {
+    "skip": true
+  },
+  "ab987b477433da2a": {
+    "type": "css_selector",
+    "question_selector": [
+      ".article h1",
+      "h1.article-title"
+    ],
+    "answer_selector": [
+      ".article-body",
+      ".article-content"
+    ],
+    "match_strategy": "sequential",
+    "url_patterns": [
+      "help.atome.ph",
+      "help"
+    ]
+  },
+  "1f7d7e5b3aa78555": {
+    "skip": true
+  },
+  "d158ca2e7a3f5542": {
+    "skip": true
+  },
+  "06bcf68ab6b3ba44": {
+    "skip": true
+  },
+  "34fb9bc279349e59": {
+    "skip": true
+  },
+  "fdac3a9d490dcb8e": {
+    "skip": true
+  },
+  "ccf031173097f1f5": {
+    "skip": true
+  },
+  "e54cae9136aa3af8": {
+    "skip": true
+  },
+  "a7d7185d7ee708fe": {
+    "skip": true
+  },
+  "f1c82ded74be4706": {
+    "skip": true
+  },
+  "aa9259c782a8f063": {
+    "skip": true
+  },
+  "b532a61d7431d6ab": {
+    "skip": true
+  },
+  "8887643c50abb29c": {
+    "skip": true
+  },
+  "7f56bc1f875e96fa": {
+    "skip": true
+  },
+  "4fd37d5c395c8eda": {
+    "skip": true
+  },
+  "4653764de06a6bdf": {
+    "skip": true
+  },
+  "54c7ac89b787b9a4": {
+    "skip": true
+  },
+  "55e66a95b46f0750": {
+    "skip": true
+  },
+  "a047bbc67e8ddbda": {
+    "skip": true
+  },
+  "c6a023569f242dd4": {
+    "skip": true
+  },
+  "8010ce088d4bc84b": {
+    "skip": true
+  },
+  "358880d5a95afe49": {
+    "skip": true
+  },
+  "a7b5e1550c9647d1": {
+    "skip": true
+  },
+  "4652941286872c18": {
+    "skip": true
+  },
+  "f4f9978dcdadab33": {
+    "skip": true
+  },
+  "5298daab8cb8d688": {
+    "skip": true
+  },
+  "4de2132d3c325389": {
+    "skip": true
+  }
+}

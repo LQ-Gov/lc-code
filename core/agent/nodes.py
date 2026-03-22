@@ -26,7 +26,6 @@ from core.agent.tools import (
 )
 
 tools = {
-    "get_all_knowledge_bases": get_all_knowledge_bases,
     "get_current_knowledge_base_url": get_current_knowledge_base_url,
     "get_knowledge_base_by_id": get_knowledge_base_by_id,
     "create_knowledge_base": create_knowledge_base,
@@ -47,6 +46,64 @@ tools = {
 }
 
 tool_function_list = tools.values()
+
+def doc_search(state: DevAgentState) -> DevAgentState:
+    """文档搜索节点：如果用户之前上传过文件，则根据用户输入从对应的向量库中进行检索"""
+    # 检查是否有上传的文件集合名称
+    if state["action"] == "upload_file" or not state.get('file_collection_name'):
+        # 如果没有上传文件，直接返回空结果
+        return {}
+
+    # 获取用户查询
+    # 优先从messages中获取最后一条消息，如果没有则使用question字段
+    messages = state.get('messages', [])
+    if messages:
+        # 获取最后一条消息的内容
+        last_message = messages[-1]
+        user_query = last_message.content if hasattr(last_message, 'content') else str(last_message)
+    else:
+        # 如果messages为空，使用question字段
+        user_query = state.get("question", "")
+    
+    if not user_query:
+        return {"messages": [AIMessage(content="No query provided for document search.")]}
+
+    # 使用search_document_collection工具进行检索
+    try:
+        # search_results = search_document_collection.invoke(
+        #     collection_name=state['file_collection_name'],
+        #     query=user_query,
+        #     n_results=5
+        # )
+
+        search_results = search_document_collection.invoke({
+            "collection_name":state['file_collection_name'],
+            "query":"user_query",
+            "n_results":2
+        })
+        
+        # 如果搜索结果是错误信息，直接返回错误
+        if isinstance(search_results, dict) and "error" in search_results:
+            error_message = f"Document search failed: {search_results['error']}"
+            return {"messages": [AIMessage(content=error_message)]}
+        
+        # 格式化搜索结果
+        if search_results:
+            formatted_results = []
+            for i, result in enumerate(search_results[:3]):  # 只取前3个结果
+                content = result.get('content', '')
+                source = result.get('source', '')
+                distance = result.get('distance', 0.0)
+                formatted_results.append(f"Result {i+1}:\nContent: {content}\nSource: {source}\nRelevance: {1-distance:.2f}")
+            
+            search_summary = "Found relevant information in the uploaded document:\n\n" + "\n\n".join(formatted_results)
+            return {"messages": [AIMessage(content=search_summary)]}
+        else:
+            return {}
+    except Exception as e:
+        error_message = f"Error during document search: {str(e)}"
+        return {"messages": [AIMessage(content=error_message)]}
+
 
 def think_about_question(state: DevAgentState) -> DevAgentState:
     """思考阶段：分析用户问题并决定是否需要调用工具"""
@@ -71,12 +128,21 @@ def think_about_question(state: DevAgentState) -> DevAgentState:
     
     prompt = f"""You are an intelligent development assistant helping users modify their customer service chatbot.
 The current page displayed in the frontend is: {state['current_preview_url']}
+The vector database collection name: {state.get('file_collection_name','')}
 
 Your tasks are:
 1. Determine if you need to call page navigation or page refresh tools based on the user's question
-2. Check if you need to read uploaded files, as the user's question may depend on previously uploaded files. If you need to depend on uploaded files, you can search through the vector database. The current collection of uploaded files is available: {state['file_collection_name']}.
+2. Check if has uploaded files, as the user's question may depend on previously uploaded files. If you need to depend on uploaded files, you can search through the vector database.
 3. Decide whether to call other tools to perform operations
 4. If the current request is not supported, output "Current operation is not supported"
+
+CRITICAL REQUIREMENT: After modifying any functionality related to knowledge bases, special flows, or error feedback, you MUST navigate to or refresh the corresponding page to ensure the changes are visible to the user. Specifically:
+- After knowledge base operations (create, update, delete), navigate to "/admin#knowledge-base"
+- After special flow operations (create, update, delete), navigate to "/admin#special-flows"  
+- After error feedback operations, navigate to "/admin#error_feedback"
+- After robot configuration changes, either navigate to "/robot" or call refresh_page() to refresh the current interface
+
+Always ensure the user can immediately see the results of their requested modifications by using the appropriate navigation or refresh tool.
 """
     
     

@@ -279,6 +279,19 @@
             min-height: auto;
         }
         
+        /* 知识库操作按钮 - 确保不换行且尺寸更小 */
+        #kb-table .actions {
+            flex-wrap: nowrap;
+            justify-content: flex-start;
+            gap: 0.25rem;
+        }
+        
+        #kb-table .actions .btn {
+            padding: 0.3rem 0.5rem;
+            font-size: 0.7rem;
+            min-height: auto;
+        }
+        
         /* 特殊流程操作按钮 - 确保不换行且尺寸更小 */
         #flows-table .actions {
             flex-wrap: nowrap;
@@ -369,6 +382,26 @@
         }
         
         .single-line-content:hover {
+            background-color: rgba(79, 70, 229, 0.05);
+            border-radius: var(--radius);
+        }
+        
+        /* 知识库URL链接样式 */
+        .kb-url-link {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            cursor: pointer;
+            padding: 0.25rem 0;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s ease;
+        }
+        
+        .kb-url-link:hover {
+            color: var(--primary-hover);
             background-color: rgba(79, 70, 229, 0.05);
             border-radius: var(--radius);
         }
@@ -786,7 +819,17 @@
         <!-- 知识库管理标签页 -->
         <div x-show="activeTab === 'knowledge-base'" class="tab-content">
             <div class="card">
-                <h2>知识库管理</h2>
+                <h2>知识库管理 
+                    <span x-show="kbBuildStatus === 'running'" style="color: var(--warning); font-size: 0.875rem; margin-left: 0.5rem;">
+                        (建设中)
+                    </span>
+                    <span x-show="kbBuildStatus === 'finished'" style="color: var(--success); font-size: 0.875rem; margin-left: 0.5rem;">
+                        (建设完成)
+                    </span>
+                    <span x-show="kbBuildStatus === 'error'" style="color: var(--danger); font-size: 0.875rem; margin-left: 0.5rem;">
+                        (建设失败)
+                    </span>
+                </h2>
                 
                 <!-- 知识库URL表单行 - 使用统一的输入框 -->
                 <div class="kb-form-row">
@@ -857,9 +900,19 @@
                                              :title="item.seed_url || '无内容'"></div>
                                     </td>
                                     <td>
-                                        <div class="single-line-content" 
-                                             x-text="truncateText(item.current_url, 50)" 
-                                             :title="item.current_url || '无内容'"></div>
+                                        <template x-if="item.current_url">
+                                            <a href="#" 
+                                               @click.prevent="openUrlInNewTab(item.current_url)"
+                                               class="kb-url-link"
+                                               :title="item.current_url"
+                                               x-text="truncateText(item.current_url, 50)">
+                                            </a>
+                                        </template>
+                                        <template x-if="!item.current_url">
+                                            <div class="single-line-content" 
+                                                 x-text="'无内容'"
+                                                 title="无内容"></div>
+                                        </template>
                                     </td>
                                     <td>
                                         <div class="single-line-content" 
@@ -874,6 +927,7 @@
                                     <td x-text="item.create_time"></td>
                                     <td>
                                         <div class="actions">
+                                            <button class="btn btn-outline" @click="refreshKbItem(item.id)">刷新</button>
                                             <button class="btn btn-danger" @click="deleteKbItem(item.id)">删除</button>
                                         </div>
                                     </td>
@@ -930,7 +984,7 @@
         <!-- 特殊问题流程标签页 -->
         <div x-show="activeTab === 'special-flows'" class="tab-content">
             <div class="card">
-                <h2>特殊问题流程管理</h2>
+                <h2>特定问题流程管理</h2>
                 
                 <button class="btn btn-primary" @click="showFlowModal()">新增流程</button>
                 
@@ -1240,6 +1294,7 @@
                 // 状态管理
                 activeTab: 'knowledge-base',
                 isEditingKbUrl: false,
+                kbBuildStatus: 'finished', // 添加知识库构建状态
                 
                 // 数据存储
                 kbUrlConfig: { url: '' },
@@ -1356,15 +1411,34 @@
                 
                 // 初始化
                 init() {
-                    this.loadKbUrlConfig();
                     this.loadKnowledgeBaseData();
                     this.loadSpecialFlows();
                     this.loadErrorFeedbacks();
+                    this.loadKbUrlConfig();
+                    this.loadBuildStatus(); // 添加加载构建状态
+                    
+                    // 根据URL锚点设置初始tab
+                    this.setTabFromHash();
+                    
+                    // 监听hash变化
+                    window.addEventListener('hashchange', () => {
+                        this.setTabFromHash();
+                    });
+                },
+                
+                // 从URL hash设置tab
+                setTabFromHash() {
+                    const hash = window.location.hash.substring(1); // 移除#号
+                    if (hash === 'knowledge-base' || hash === 'special-flows' || hash === 'error-feedback') {
+                        this.activeTab = hash;
+                    }
                 },
                 
                 // 切换标签页
                 switchTab(tabName) {
                     this.activeTab = tabName;
+                    // 更新URL hash
+                    window.location.hash = tabName;
                     // 根据标签页加载对应数据
                     if (tabName === 'knowledge-base' && this.knowledgeBaseItems.length === 0) {
                         this.loadKnowledgeBaseData();
@@ -1515,6 +1589,62 @@
                     } finally {
                         this.loading.kb = false;
                     }
+                },
+                
+                // 添加刷新知识库项的方法
+                refreshKbItem(kbId) {
+                    this.loading.kb = true;
+                    fetch(`/api/knowledge-bases/rebuild/${kbId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.code === 200) {
+                            this.showNotification('success', '知识库重建任务已启动');
+                            // 轮询检查构建状态
+                            this.pollBuildStatus();
+                        } else {
+                            this.showNotification('error', data.msg || '刷新失败');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error refreshing knowledge base:', error);
+                        this.showNotification('error', '网络错误，请重试');
+                    })
+                    .finally(() => {
+                        this.loading.kb = false;
+                    });
+                },
+                
+                // 轮询获取构建状态
+                pollBuildStatus() {
+                    const checkStatus = () => {
+                        fetch('/api/config/build-kb-status')
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.code === 200) {
+                                    this.kbBuildStatus = data.data.status;
+                                    // 如果状态不是 running，停止轮询
+                                    if (this.kbBuildStatus !== 'running') {
+                                        // 延迟一点时间再刷新数据，确保新数据已经生成
+                                        setTimeout(() => {
+                                            this.loadKnowledgeBaseData();
+                                        }, 1000);
+                                        return;
+                                    }
+                                }
+                                // 继续轮询
+                                setTimeout(checkStatus, 2000);
+                            })
+                            .catch(error => {
+                                console.error('Error polling build status:', error);
+                                // 停止轮询
+                            });
+                    };
+                    checkStatus();
                 },
                 
                 // 特殊流程相关方法
@@ -1755,7 +1885,28 @@
                     if (!text) return '无内容';
                     if (text.length <= maxLength) return text;
                     return text.substring(0, maxLength) + '...';
-                }
+                },
+                
+                // 加载构建状态
+                loadBuildStatus() {
+                    fetch('/api/config/build-kb-status')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.code === 200) {
+                                this.kbBuildStatus = data.data.status;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading build status:', error);
+                        });
+                },
+                
+                // 在新标签页中打开URL
+                openUrlInNewTab(url) {
+                    if (url && url.trim()) {
+                        window.open(url, '_blank');
+                    }
+                },
             };
         }
     </script>

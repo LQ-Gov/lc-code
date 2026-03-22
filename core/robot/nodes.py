@@ -58,19 +58,6 @@ def judge_question_type(state: CustomerServiceRobotState) -> CustomerServiceRobo
         classification = result.content.strip().lower()
 
         return { "classification": classification}
-
-        # state.update({"classification": classification}) 
-        
-        # 检查分类结果是否是启用的特殊问题key之一
-        # enabled_keys = [item["key"].lower() for item in enabled_specific_questions]
-        # if classification in enabled_keys:
-        #     return { "specific_question_type": classification, "is_invalid_question": False}
-        # elif classification == "invalid":
-        #     return { "is_invalid_question": True}
-        # elif classification == "casual_chat":
-        #     return { "specific_question_type": "casual_chat", "is_invalid_question": False}
-        # else:  # general_kb or any other response
-        #     return { "specific_question_type": None, "is_invalid_question": False}
             
     except Exception as e:
         # Fallback to original keyword-based logic if Qwen3 fails
@@ -83,13 +70,13 @@ def judge_question_type(state: CustomerServiceRobotState) -> CustomerServiceRobo
         casual_keywords = ["你好", "您好", "谢谢", "感谢", "再见", "拜拜", "烦死了", "生气", "开心", "高兴"]
         for kw in casual_keywords:
             if kw in question:
-                return {"specific_question_type": "casual_chat", "is_invalid_question": False}
+                return {"classification": "casual_chat", "is_invalid_question": False}
                 
         for kw, type_ in specific_keywords.items():
             if kw in question:
-                return {**state, "specific_question_type": type_, "is_invalid_question": False}
+                return {**state, "classification": type_, "is_invalid_question": False}
         # Default to general knowledge base question
-        return { "specific_question_type": None, "is_invalid_question": False}
+        return { "classification": None, "is_invalid_question": False}
 
 # 节点3：知识库匹配
 def match_kb_node(state: CustomerServiceRobotState) -> CustomerServiceRobotState:
@@ -129,18 +116,17 @@ def match_kb_node(state: CustomerServiceRobotState) -> CustomerServiceRobotState
 
 # 节点4：特定问题工具调用
 def handle_specific_question(state: CustomerServiceRobotState) -> CustomerServiceRobotState:
-    specific_type = state["specific_question_type"]
+    classification = state["classification"]
     question = state["question"]
     user_id = state["user_id"]
     messages = state["messages"]
-    history = "\n".join([f"{m.type}: {m.content}" for m in messages])
+    
     try:
         # Use SpecificQuestionService to query the specific_question_flows table
-        flow_config = SpecificQuestionService.get_specific_question_flow(specific_type)
+        flow_config = SpecificQuestionService.get_specific_question_flow(classification)
         
         if flow_config:
             # Use dynamic flow configuration from database
-            prompt_template = flow_config["prompt"]
             flow_info = flow_config["flow"]
             
             # Build the dynamic prompt
@@ -157,16 +143,6 @@ Please answer the user's question based on the above information and clearly ind
 Ensure your response is clear, accurate, and strictly follows the above format to provide next step instructions."""
             )
             
-#             Please strictly follow the following response format:
-# Thought: Your thinking process for analyzing the question, breaking down tasks, and planning next actions.
-# Action: The action you decide to take, which must be one of the following formats:
-# - `{{tool_name}}[{{tool_input}}]`: Call an available tool.
-# - `feedback[{{feedback_content}}]`: When you have obtained the final answer or need the user to provide additional information.
-# - When you have collected enough information to answer the user's final question, you must use feedback[final_answer] after the Action: field to output the final answer.
-            
-            # Use Qwen model to generate response with next steps
-            # chat_prompt = ChatPromptTemplate.from_template(base_prompt)
-            # chain = chat_prompt | llm_with_tools
             result = llm_with_tools.invoke([*messages,sm])
 
             print(result)
@@ -175,7 +151,7 @@ Ensure your response is clear, accurate, and strictly follows the above format t
             
         else:
             # No flow configuration found, fallback to generic response
-            reply = f"Sorry, I cannot handle the specific question type '{specific_type}' at the moment."
+            reply = f"Sorry, I cannot handle the specific question type '{classification}' at the moment."
             tool_result = {
                 "dynamic_response": None,
                 "flow_used": False,
@@ -186,7 +162,7 @@ Ensure your response is clear, accurate, and strictly follows the above format t
         
         # 封装工具调用结果，包含下一步要做的事情
         tool_call_result = {
-            "tool_name": specific_type if specific_type else None,
+            "tool_name": classification if classification else None,
             "result": tool_result,
             "success": True,
             "error": None,

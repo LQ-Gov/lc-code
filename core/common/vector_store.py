@@ -56,22 +56,23 @@ class KnowledgeBaseVectorStore:
         从数据库加载知识库数据
         
         Returns:
-            包含所有QA对的列表，每个元素为{"question": str, "answer": str, "url": str}
+            包含所有QA对的列表，每个元素为{"id": int, "question": str, "answer": str, "url": str}
         """
         qa_pairs = []
         
-        # 查询所有爬虫结果
+        # 查询所有爬虫结果，包含id字段
         sql = """
-            SELECT seed_url, questions, answers 
+            SELECT id, current_url, questions, answers 
             FROM crawler_results 
             WHERE questions IS NOT NULL AND answers IS NOT NULL
         """
         results = db_query(sql)
         
         for result in results:
-            seed_url = result[0]
-            questions_data = result[1]
-            answers_data = result[2]
+            record_id = result[0]
+            current_url = result[1]
+            questions_data = result[2]
+            answers_data = result[3]
             
             try:
                 # 尝试解析为JSON格式（新格式）
@@ -88,9 +89,10 @@ class KnowledgeBaseVectorStore:
                         
                         if question and answer:  # 只添加非空的QA对
                             qa_pairs.append({
+                                "id": record_id,
                                 "question": question,
                                 "answer": answer,
-                                "url": seed_url
+                                "url": current_url
                             })
                 else:
                     # 处理纯文本格式（旧格式）
@@ -100,9 +102,10 @@ class KnowledgeBaseVectorStore:
                     
                     if question and answer:  # 只添加非空的QA对
                         qa_pairs.append({
+                            "id": record_id,
                             "question": question,
                             "answer": answer,
-                            "url": seed_url
+                            "url": current_url
                         })
                         
             except (json.JSONDecodeError, AttributeError, IndexError) as e:
@@ -113,12 +116,13 @@ class KnowledgeBaseVectorStore:
                     
                     if question and answer:  # 只添加非空的QA对
                         qa_pairs.append({
+                            "id": record_id,
                             "question": question,
                             "answer": answer,
-                            "url": seed_url
+                            "url": current_url
                         })
                 except Exception as text_error:
-                    print(f"Warning: Failed to parse QA data for URL {seed_url}: {e}, {text_error}")
+                    print(f"Warning: Failed to parse QA data for URL {current_url}: {e}, {text_error}")
                     continue
         
         return qa_pairs
@@ -158,13 +162,14 @@ class KnowledgeBaseVectorStore:
         metadatas = []
         ids = []
         
-        for i, qa_pair in enumerate(qa_pairs):
+        for qa_pair in qa_pairs:
             documents.append(qa_pair["question"])
             metadatas.append({
                 "answer": qa_pair["answer"],
-                "url": qa_pair["url"]
+                "url": qa_pair["url"],
+                "db_id": qa_pair["id"]  # 添加数据库ID到metadata
             })
-            ids.append(f"qa_{i}")
+            ids.append(f"kb_{qa_pair['id']}")  # 使用数据库ID作为向量库文档ID
         
         # 批量添加到向量库
         self.collection.add(
@@ -175,6 +180,77 @@ class KnowledgeBaseVectorStore:
         
         print(f"Successfully imported {len(documents)} QA pairs into vector store")
         return len(documents)
+    
+    def update_vector_by_db_id(self, db_id: int, question: str, answer: str, url: str) -> bool:
+        """
+        根据数据库ID更新向量库中的数据
+        
+        Args:
+            db_id: 数据库记录ID
+            question: 问题文本
+            answer: 答案文本
+            url: URL
+            
+        Returns:
+            更新是否成功
+        """
+        try:
+            vector_id = f"kb_{db_id}"
+            
+            # 检查是否存在该ID的向量
+            existing = self.collection.get(ids=[vector_id])
+            if not existing['ids']:
+                # 如果不存在，添加新的向量
+                self.collection.add(
+                    documents=[question],
+                    metadatas=[{
+                        "answer": answer,
+                        "url": url,
+                        "db_id": db_id
+                    }],
+                    ids=[vector_id]
+                )
+            else:
+                # 如果存在，更新向量
+                self.collection.update(
+                    ids=[vector_id],
+                    documents=[question],
+                    metadatas=[{
+                        "answer": answer,
+                        "url": url,
+                        "db_id": db_id
+                    }]
+                )
+            
+            return True
+        except Exception as e:
+            print(f"Error updating vector for db_id {db_id}: {str(e)}")
+            return False
+    
+    def delete_vector_by_db_id(self, db_id: int) -> bool:
+        """
+        根据数据库ID删除向量库中的数据
+        
+        Args:
+            db_id: 数据库记录ID
+            
+        Returns:
+            删除是否成功
+        """
+        try:
+            vector_id = f"kb_{db_id}"
+            
+            # 检查是否存在该ID的向量
+            existing = self.collection.get(ids=[vector_id])
+            if existing['ids']:
+                self.collection.delete(ids=[vector_id])
+                return True
+            else:
+                # 如果不存在，返回True（视为已删除）
+                return True
+        except Exception as e:
+            print(f"Error deleting vector for db_id {db_id}: {str(e)}")
+            return False
     
     def search_similar_questions(self, query: str, n_results: int = 5) -> List[Dict]:
         """
@@ -216,8 +292,7 @@ class KnowledgeBaseVectorStore:
             "count": self.collection.count(),
             "path": CHROMA_PATH
         }
-
-
+    
 class DocumentVectorStore:
     """文档向量存储类，用于处理上传文档的向量存储"""
     

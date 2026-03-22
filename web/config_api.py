@@ -25,6 +25,18 @@ def get_knowledge_base_config():
         return {"code": 500, "msg": str(e), "data": {}}
 
 
+@config_router.get("/build-kb-status", response_model=dict)
+def get_build_kb_status():
+    """
+    获取知识库构建状态
+    """
+    try:
+        status = ConfigManager.get_config('build_kb_status', 'finished')
+        return {"code": 200, "msg": "success", "data": {"status": status}}
+    except Exception as e:
+        return {"code": 500, "msg": str(e), "data": {"status": "finished"}}
+
+
 @config_router.post("/knowledge-base-url", response_model=dict)
 def update_knowledge_base_config(req: KnowledgeBaseUrlRequest):
     """

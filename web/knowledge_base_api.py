@@ -40,33 +40,6 @@ def get_knowledge_bases():
     except Exception as e:
         return {"code": 500, "msg": str(e), "data": []}
 
-
-@kb_router.post("", response_model=dict)
-def create_knowledge_base(req: KnowledgeBaseRequest):
-    """
-    创建知识库并启动爬虫
-    """
-    try:
-        result = KnowledgeBaseService.create_knowledge_base(req.url)
-        return {"code": 200, "msg": "知识库创建成功", "data": result}
-    except Exception as e:
-        return {"code": 500, "msg": str(e), "data": {}}
-
-
-@kb_router.put("/{kb_id}", response_model=dict)
-def update_knowledge_base(kb_id: str, req: UpdateKnowledgeBaseRequest):
-    """
-    更新知识库URL，根据rebuild参数决定是否重新爬取新URL的内容
-    """
-    try:
-        result = KnowledgeBaseService.update_knowledge_base(kb_id, req.url, req.rebuild)
-        return {"code": 200, "msg": result["message"], "data": result.get("result", {})}
-    except Exception as e:
-        if "知识库不存在" in str(e):
-            return {"code": 404, "msg": str(e), "data": {}}
-        return {"code": 500, "msg": str(e), "data": {}}
-
-
 @kb_router.delete("/{kb_id}", response_model=dict)
 def delete_knowledge_base(kb_id: str):
     """
@@ -91,7 +64,7 @@ def rebuild_knowledge_base(kb_id: str):
     """
     try:
         result = KnowledgeBaseService.rebuild_knowledge_base(kb_id)
-        return {"code": 200, "msg": "知识库重建完成", "data": result}
+        return {"code": 200, "msg": "知识库重建任务已启动", "data": result}
     except Exception as e:
         if "知识库不存在" in str(e):
             return {"code": 404, "msg": str(e), "data": {}}

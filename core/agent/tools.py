@@ -195,7 +195,9 @@ def get_all_special_question_flows() -> List[Dict[str, Any]]:
         List of all special question flows with their details
     """
     try:
-        return SpecificQuestionService.get_all_special_question_flows()
+        data = SpecificQuestionService.get_all_special_question_flows()
+
+        return {"data": data, "count": len(data)}
     except Exception as e:
         return {"error": f"Failed to get all special question flows: {str(e)}"}
 
@@ -269,14 +271,19 @@ def delete_special_question_flow(key: str) -> Dict[str, Any]:
         return {"error": f"Failed to delete special question flow: {str(e)}"}
 
 
-@tool(description="Navigate to a specified page URL (frontend tool)",extras={"executor": "frontend"})
+@tool(description="Navigate to a specified page URL (frontend tool)",extras={"executor": "frontend"},parse_docstring=True)
 def navigate_to_page(page_url: str, page_name: str = "") -> Dict[str, Any]:
     """
     Navigate to a specified page URL. This is a frontend tool that returns instructions for the frontend to execute.
     
     Args:
-        page_url: The URL to navigate to
+        page_url: The URL to navigate to. Only allowed URLs are:
+                  - "/robot" 
+                  - "/admin#knowledge-base"
+                  - "/admin#special-flows"
+                  - "/admin#error_feedback"
         page_name: Optional name/description of the page
+    
         
     Returns:
         JSON result with method name and parameters for frontend execution

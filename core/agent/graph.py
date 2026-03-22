@@ -5,7 +5,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import AIMessage,SystemMessage, ToolMessage, HumanMessage
 from core.agent.nodes import (
     think_about_question,
-    
+    doc_search,
     tools,
     observe_and_decide,
     generate_final_answer
@@ -40,6 +40,7 @@ def build_dev_agent_graph():
     graph = StateGraph(DevAgentState)
     
     # 添加节点
+    graph.add_node("doc_search", doc_search)
     graph.add_node("think", think_about_question)
     graph.add_node("act", ToolNode(tools.values()))
     graph.add_node("observe", observe_and_decide)
@@ -47,6 +48,8 @@ def build_dev_agent_graph():
     
     # 定义工作流
     graph.add_edge(START, "think")
+    # graph.add_edge(START, "doc_search")
+    # graph.add_edge("doc_search", "think")
     graph.add_conditional_edges(
         "think",
         should_continue,
@@ -55,15 +58,15 @@ def build_dev_agent_graph():
             "end": "answer"
         }
     )
-    graph.add_edge("act", "observe")
-    graph.add_conditional_edges(
-        "observe",
-        should_continue,
-        {
-            "continue": "act",  # 可能需要多次工具调用
-            "end": "answer"
-        }
-    )
+    graph.add_edge("act", "think")
+    # graph.add_conditional_edges(
+    #     "observe",
+    #     should_continue,
+    #     {
+    #         "continue": "act",  # 可能需要多次工具调用
+    #         "end": "answer"
+    #     }
+    # )
     graph.add_edge("answer", END)
 
     memory = MemorySaver()
