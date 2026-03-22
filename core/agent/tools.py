@@ -3,6 +3,7 @@ from langchain_core.tools import tool
 from core.common.knowledge_service import KnowledgeBaseService
 from core.common.specific_question_service import SpecificQuestionService
 from core.common.vector_store import DocumentVectorStore
+from core.common.config_manager import ConfigManager
 
 
 @tool(description="Get all knowledge bases from the system")
@@ -67,13 +68,12 @@ def create_knowledge_base(seed_url: str) -> Dict[str, Any]:
         return {"error": f"Failed to create knowledge base: {str(e)}"}
 
 
-@tool(description="Update a knowledge base URL with optional rebuild")
-def update_knowledge_base(kb_id: str, new_url: str, rebuild: bool = False) -> Dict[str, Any]:
+@tool(description="Update a knowledge base URL with optional rebuild",parse_docstring=True)
+def update_knowledge_base_url(new_url: str, rebuild: bool = False) -> Dict[str, Any]:
     """
     Update a knowledge base URL with optional rebuild of content.
     
     Args:
-        kb_id: The knowledge base ID to update
         new_url: The new URL to set
         rebuild: Whether to rebuild the content by re-crawling (default: False)
         
@@ -81,9 +81,14 @@ def update_knowledge_base(kb_id: str, new_url: str, rebuild: bool = False) -> Di
         Result of the update operation
     """
     try:
-        return KnowledgeBaseService.update_knowledge_base(kb_id, new_url, rebuild)
+        ConfigManager.set_knowledge_base_url(new_url)
+        if rebuild:
+            KnowledgeBaseService.rebuild_current_knowledge_base()
+        return {"success":True}
     except Exception as e:
-        return {"error": f"Failed to update knowledge base: {str(e)}"}
+        return {"success":False, "error": f"Failed to update knowledge base: {str(e)}"}
+    
+
 
 
 @tool(description="Delete a knowledge base by ID")
@@ -122,6 +127,19 @@ def rebuild_knowledge_base(kb_id: str) -> Dict[str, Any]:
         return KnowledgeBaseService.rebuild_knowledge_base(kb_id)
     except Exception as e:
         return {"error": f"Failed to rebuild knowledge base: {str(e)}"}
+
+@tool(description="Rebuild the current all knowledge base by re-crawling the configured URL")
+def rebuld_current_knowledge_base() -> Dict[str, Any]:
+    """
+    Rebuild the current all knowledge base by re-crawling the configured URL.
+    
+    Returns:
+        Result of the rebuild operation
+    """
+    try:
+        return KnowledgeBaseService.rebuild_current_knowledge_base()
+    except Exception as e:
+        return {"error": f"Failed to rebuild current knowledge base: {str(e)}"}
 
 
 @tool(description="Rebuild the current knowledge base by re-crawling the configured URL")

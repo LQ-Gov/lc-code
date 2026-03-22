@@ -10,7 +10,7 @@ from core.agent.tools import (
     get_enabled_special_question_flows,
     get_specific_question_flow,
     create_knowledge_base,
-    update_knowledge_base,
+    update_knowledge_base_url,
     delete_knowledge_base,
     rebuild_knowledge_base,
     rebuild_current_knowledge_base,
@@ -22,14 +22,15 @@ from core.agent.tools import (
     format_special_questions_for_prompt,
     navigate_to_page,
     refresh_page,
-    search_document_collection
+    search_document_collection,
+    rebuld_current_knowledge_base
 )
 
 tools = {
     "get_current_knowledge_base_url": get_current_knowledge_base_url,
+    "rebuld_current_knowledge_base":rebuld_current_knowledge_base,
     "get_knowledge_base_by_id": get_knowledge_base_by_id,
-    "create_knowledge_base": create_knowledge_base,
-    "update_knowledge_base": update_knowledge_base,
+    "update_knowledge_base_url": update_knowledge_base_url,
     "delete_knowledge_base": delete_knowledge_base,
     "rebuild_knowledge_base": rebuild_knowledge_base,
     "rebuild_current_knowledge_base": rebuild_current_knowledge_base,
