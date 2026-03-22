@@ -138,9 +138,10 @@ def handle_specific_question(state: CustomerServiceRobotState) -> CustomerServic
 
 Flow Information: {flow_info if flow_info else 'No specific flow'}
 
-Please answer the user's question based on the above information and clearly indicate the next execution steps.
+Please answer the user's question based on the above information and clearly indicate the next execution steps. 
+IMPORTANT: Only provide necessary guidance to the user without revealing the complete internal flow details or technical implementation. Keep your response concise and user-friendly.
 
-Ensure your response is clear, accurate, and strictly follows the above format to provide next step instructions."""
+Ensure your response is clear, accurate, and strictly follows the above format to provide next step instructions.""" 
             )
             
             result = llm_with_tools.invoke([*messages,sm])
