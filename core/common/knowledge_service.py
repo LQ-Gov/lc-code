@@ -278,7 +278,7 @@ class KnowledgeBaseService:
             callback = KnowledgeBaseCrawlCallback(seed_url)
             
             # 重新爬取，不保存到文件（通过回调处理数据）
-            KnowledgeBaseService.CURRENT_CRAWLER = QACrawler(max_depth=2, concurrency=10, callback=callback)
+            KnowledgeBaseService.CURRENT_CRAWLER = QACrawler(max_depth=3, concurrency=10, callback=callback)
             asyncio.run(KnowledgeBaseService.CURRENT_CRAWLER.run([seed_url]))
             
         except Exception as e:
