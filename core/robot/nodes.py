@@ -48,7 +48,7 @@ def judge_question_type(state: CustomerServiceRobotState) -> CustomerServiceRobo
             - "general_kb": General questions that should be answered from the knowledge base
             {specific_questions_str}
             
-            Respond with ONLY the category name (invalid, casual_chat, bank_card_apply, bank_card_trans_fail, general_kb, or the specific question key):"""
+            Respond with ONLY the category name (invalid, casual_chat, general_kb, or the specific question key):"""
         )
         
         result = model.invoke([*messages,prompt])
