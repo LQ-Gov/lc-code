@@ -76,7 +76,7 @@ def update_knowledge_base_url(new_url: str, rebuild: bool = False) -> Dict[str, 
     Args:
         new_url: The new URL to set
         rebuild: Whether to rebuild the content by re-crawling (default: False)
-        
+    
     Returns:
         Result of the update operation
     """
