@@ -595,11 +595,26 @@
                 frontendTools: {
                     navigate_to_page: (parameters) => {
                         if (parameters.page_url) {
-                            // 修改右侧预览框iframe的URL
-                            console.log(`跳转到页面：${parameters.page_url}`);
+                            // 获取右侧iframe的当前URL
                             const iframe = document.querySelector('.iframe-container');
                             if (iframe) {
-                                iframe.src = parameters.page_url;
+                                try {
+                                    const currentIframeUrl = iframe.contentWindow.location.href;
+                                    const targetUrl = new URL(parameters.page_url, window.location.origin).href;
+                                    
+                                    // 如果目标URL与当前iframe URL相同，则刷新页面
+                                    if (currentIframeUrl === targetUrl) {
+                                        console.log('目标页面与当前页面相同，执行刷新');
+                                        iframe.contentWindow.location.reload();
+                                    } else {
+                                        console.log(`跳转到页面：${parameters.page_url}`);
+                                        iframe.src = parameters.page_url;
+                                    }
+                                } catch (error) {
+                                    // 处理跨域或其他错误，直接导航
+                                    console.log(`跳转到页面：${parameters.page_url}`);
+                                    iframe.src = parameters.page_url;
+                                }
                             }
                         }
                     },
