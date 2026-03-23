@@ -110,9 +110,9 @@ class QACrawler:
         )
 
         # 浏览器配置：启用 stealth 模式、禁用自动化特征
-        browser_config = BrowserConfig(
+        self.browser_config = BrowserConfig(
             headless=True,  # 生产环境建议无头；调试可设为 False
-            stealth_mode=True,  # 启用 Playwright  stealth 插件
+            enable_stealth=True,  # 启用 Playwright  stealth 插件
             extra_args=[
                 "--disable-blink-features=AutomationControlled",  # 隐藏自动化标识
                 "--no-sandbox",
@@ -121,7 +121,6 @@ class QACrawler:
         )
 
         self.crawler_config = CrawlerRunConfig(
-            browser_config=browser_config,
             word_count_threshold=10,
             css_selector="body",
             chunking_strategy=IdentityChunking(),
@@ -141,6 +140,7 @@ class QACrawler:
         """获取或创建AsyncWebCrawler实例"""
         if self.crawler is None:
             self.crawler = AsyncWebCrawler(
+                config =self.browser_config,
                 verbose=False
             )
             await self.crawler.__aenter__()
