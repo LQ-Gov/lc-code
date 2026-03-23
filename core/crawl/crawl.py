@@ -11,7 +11,7 @@ import hashlib
 import asyncio
 from typing import Dict, List, Set, Optional, Tuple, Any
 from urllib.parse import urljoin, urlparse
-from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, LXMLWebScrapingStrategy
+from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, LXMLWebScrapingStrategy,BrowserConfig
 from crawl4ai.chunking_strategy import IdentityChunking
 from core.crawl.feature_extractor import PageFeatureExtractor, extract_qa_using_features
 from core.crawl.llm_utils import is_qa_page_with_llm, extract_qa_content_with_llm
@@ -105,6 +105,31 @@ class QACrawler:
             parser_type="lxml",
             js_only=False,
             wait_until="load",
+            magic=True,
+            page_timeout=30000,
+        )
+
+        # 浏览器配置：启用 stealth 模式、禁用自动化特征
+        browser_config = BrowserConfig(
+            headless=True,  # 生产环境建议无头；调试可设为 False
+            stealth_mode=True,  # 启用 Playwright  stealth 插件
+            extra_args=[
+                "--disable-blink-features=AutomationControlled",  # 隐藏自动化标识
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+            ],
+        )
+
+        self.crawler_config = CrawlerRunConfig(
+            word_count_threshold=10,
+            css_selector="body",
+            chunking_strategy=IdentityChunking(),
+            bypass_cache=False,
+            only_text=False,
+            parser_type="lxml",
+            js_only=False,
+            wait_until="load",
+            magic=
             page_timeout=30000,
         )
         
