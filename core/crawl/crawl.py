@@ -121,6 +121,7 @@ class QACrawler:
         )
 
         self.crawler_config = CrawlerRunConfig(
+            browser_config=browser_config,
             word_count_threshold=10,
             css_selector="body",
             chunking_strategy=IdentityChunking(),
@@ -129,7 +130,7 @@ class QACrawler:
             parser_type="lxml",
             js_only=False,
             wait_until="load",
-            magic=
+            magic=True,
             page_timeout=30000,
         )
         
